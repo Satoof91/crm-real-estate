@@ -1,0 +1,139 @@
+ building the app\web and focus on the requirements :
+
+
+
+Requirements Documentation (The BA Hat)
+
+I'll expand on your four points to include implied requirements and user stories.
+
+1. Contact/Customer Management
+
+This module manages all people, primarily tenants.
+
+
+
+Entities: Contact, Tenant (a type of Contact)
+
+Key Fields:
+
+Full Name
+
+Phone Number (Must be WhatsApp-enabled, with a validation flag)
+
+Email
+
+National ID / Passport Number
+
+Primary Language (for notification templates)
+
+Status (e.g., Prospect, Active Tenant, Past Tenant)
+
+User Story: "As a building owner, I need to store and quickly find a tenant's contact details, especially their WhatsApp number, so I can link them to a contract."
+
+2. Property & Unit Management (Assets)
+
+This module manages your physical inventory.
+
+
+
+Entities: Building, Unit (e.g., Apartment)
+
+Hierarchy: A Building can have many Units.
+
+Key Building Fields:
+
+Building Name (e.g., "Plaza Tower")
+
+Address
+
+Total Number of Units
+
+Key Unit Fields:
+
+Unit Number (e.g., "Apt 101")
+
+Type (e.g., 2-Bedroom, Studio, Retail)
+
+Size (e.g., 80 sqm)
+
+Status (Critical: Vacant, Occupied, Under Maintenance)
+
+User Story: "As a building owner, I want to see a list of all my apartments and their status (vacant/occupied) at a glance so I know what's available to rent."
+
+3. Contract & Lease Management (The "Glue")
+
+This is the core module that connects Contacts to Units.
+
+
+
+Entity: Contract / Lease
+
+Relationships:
+
+Links one or more Contacts (Tenants) to one Unit.
+
+Triggers a change in Unit.Status from Vacant to Occupied.
+
+Key Fields:
+
+Start Date
+
+End Date
+
+Rent Amount
+
+Payment Frequency (e.g., Monthly, Quarterly)
+
+Security Deposit Amount
+
+Contract Document (File Upload)
+
+User Story: "As a building owner, I want to create a new contract for a tenant, linking them to 'Apt 101' from January 1st to December 31st for $1000/month."
+
+4. Payment & Invoice Tracking (New Module)
+
+You mentioned "upcoming payment" and "received payment." This implies a simple finance ledger.
+
+
+
+Entity: Invoice / Payment
+
+Key Feature: When a Contract is created, the system should auto-generate the payment schedule (e.g., 12 invoice records, one for the 1st of each month).
+
+Key Fields:
+
+Due Date
+
+Amount Due
+
+Status (Pending, Paid, Overdue)
+
+Date Paid
+
+User Story: "As a building owner, when I mark the June invoice as Paid, I want the system to log the payment and send me a 'Payment Received' notification."
+
+5. Notification Engine (WhatsApp Integration)
+
+This is the "why" of the project. It monitors the other modules for key events.
+
+
+
+Key Technical Constraint: This requires the WhatsApp Business API. You cannot do this reliably with a personal WhatsApp account. This means using a third-party API provider like Twilio, MessageBird, or Meta's own API, which will have a (small) per-message or per-conversation cost.
+
+Notification Triggers (Events):
+
+Event: Payment.DueDate is 7 days away AND Payment.Status is Pending.
+
+Action: Send WhatsApp to Owner: "Reminder: Rent for Unit 101 (Tenant: John) is due in 7 days."
+
+Event: Payment.Status changes to Paid.
+
+Action: Send WhatsApp to Owner: "Confirmation: Payment of $1000 received for Unit 101."
+
+Event: Contract.EndDate is 30 days away.
+
+Action: Send WhatsApp to Owner: "Alert: Contract for Unit 101 (Tenant: John) expires in 30 days."
+
+Event: Contract.StartDate is 1 day away.
+
+Action: Send WhatsApp to Owner: "Info: Tenant John's contract for Unit 101 starts tomorrow.
