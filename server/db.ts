@@ -16,10 +16,12 @@ if (!process.env.DATABASE_URL) {
 
 export let db: any;
 
+export let pool: Pool | undefined;
+
 if (process.env.DATABASE_URL === 'sqlite') {
   const sqlite = new Database('local.db');
   db = drizzleSqlite(sqlite, { schema: sqliteSchema });
 } else {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  pool = new Pool({ connectionString: process.env.DATABASE_URL });
   db = drizzle({ client: pool, schema });
 }

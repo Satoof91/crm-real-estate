@@ -6,14 +6,23 @@ import { passport } from "./auth";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
+import connectPgSimple from "connect-pg-simple";
+import { pool } from "./db";
+
 const app = express();
+app.set("trust proxy", 1);
 
 // Serve uploaded files
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
+const PgStore = connectPgSimple(session);
+
 // Session configuration
 app.use(
   session({
+    store: process.env.NODE_ENV === "production" && pool
+      ? new PgStore({ pool, createTableIfMissing: true })
+      : undefined,
     secret: process.env.SESSION_SECRET || "your-secret-key-change-in-production",
     resave: false,
     saveUninitialized: false,
