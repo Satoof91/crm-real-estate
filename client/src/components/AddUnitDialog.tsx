@@ -32,6 +32,7 @@ export function AddUnitDialog({ open, onOpenChange, buildingId, onSubmit }: AddU
     unitNumber: '',
     type: '2-bedroom',
     size: '',
+    electricityNumber: '',
     status: 'vacant',
   });
 
@@ -48,6 +49,7 @@ export function AddUnitDialog({ open, onOpenChange, buildingId, onSubmit }: AddU
       unitNumber: '',
       type: '2-bedroom',
       size: '',
+      electricityNumber: '',
       status: 'vacant',
     });
   };
@@ -102,6 +104,16 @@ export function AddUnitDialog({ open, onOpenChange, buildingId, onSubmit }: AddU
                 onChange={(e) => setFormData({ ...formData, size: e.target.value })}
                 placeholder={t('properties.sizePlaceholder')}
                 data-testid="input-unit-size"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="electricityNumber">Electricity Number</Label>
+              <Input
+                id="electricityNumber"
+                value={formData.electricityNumber}
+                onChange={(e) => setFormData({ ...formData, electricityNumber: e.target.value })}
+                placeholder="e.g. 123456789"
+                data-testid="input-electricity-number"
               />
             </div>
             <div className="space-y-2">

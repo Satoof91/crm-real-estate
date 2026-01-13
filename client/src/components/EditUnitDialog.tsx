@@ -39,6 +39,7 @@ interface EditUnitDialogProps {
 
 const formSchema = updateUnitSchema.extend({
   size: z.string().optional(),
+  electricityNumber: z.string().optional(),
   rentAmount: z.string().optional(),
 });
 
@@ -50,6 +51,7 @@ export function EditUnitDialog({ open, onOpenChange, unit, onSubmit }: EditUnitD
       unitNumber: "",
       type: "apartment",
       size: "",
+      electricityNumber: "",
       rentAmount: "",
       status: "vacant",
     },
@@ -61,6 +63,7 @@ export function EditUnitDialog({ open, onOpenChange, unit, onSubmit }: EditUnitD
         unitNumber: unit.unitNumber || "",
         type: unit.type || "apartment",
         size: unit.size?.toString() || "",
+        electricityNumber: unit.electricityNumber || "",
         rentAmount: unit.rentAmount?.toString() || "",
         status: unit.status || "vacant",
       });
@@ -142,6 +145,19 @@ export function EditUnitDialog({ open, onOpenChange, unit, onSubmit }: EditUnitD
                   <FormLabel>{t('properties.size')}</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="electricityNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Electricity Number</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="e.g. 123456789" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

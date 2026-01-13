@@ -223,7 +223,7 @@ export default function Properties() {
 
                 {/* Units Table (Expandable) */}
                 {isExpanded && (
-                  <div className="bg-muted/30">
+                  <div className="bg-muted/30 overflow-x-auto">
                     {buildingUnits.length > 0 ? (
                       <Table>
                         <TableHeader>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ContactsTable } from "@/components/ContactsTable";
 import { AddContactDialog } from "@/components/AddContactDialog";
+import { EditContactDialog } from "@/components/EditContactDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Download } from "lucide-react";
@@ -13,6 +14,8 @@ import { exportToCSV } from "@/lib/export";
 export default function Customers() {
   const { t } = useTranslation();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
@@ -42,6 +45,35 @@ export default function Customers() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleEditContact = async (data: any) => {
+    try {
+      // Convert boolean to integer for SQLite compatibility
+      const contactData = {
+        ...data,
+        isWhatsAppEnabled: data.isWhatsAppEnabled ? 1 : 0,
+      };
+      await apiRequest('PUT', `/api/contacts/${data.id}`, contactData);
+      queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
+      toast({
+        title: t('customers.contactUpdated'),
+        description: t('customers.contactUpdatedDesc', { name: data.fullName }),
+      });
+      setEditDialogOpen(false);
+      setSelectedContact(null);
+    } catch (error: any) {
+      toast({
+        title: t('common.error'),
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleOpenEditDialog = (contact: any) => {
+    setSelectedContact(contact);
+    setEditDialogOpen(true);
   };
 
   const handleDelete = async (contact: any) => {
@@ -76,25 +108,27 @@ export default function Customers() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{t('customers.title')}</h1>
-          <p className="text-muted-foreground mt-2">{t('customers.subtitle')}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">{t('customers.title')}</h1>
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base">{t('customers.subtitle')}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => exportToCSV(contacts, 'customers.csv')}>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button variant="outline" onClick={() => exportToCSV(contacts, 'customers.csv')} className="flex-1 sm:flex-none">
             <Download className="h-4 w-4 mr-2" />
-            {t("common.exportCSV")}
+            <span className="hidden sm:inline">{t("common.exportCSV")}</span>
+            <span className="sm:hidden">Export</span>
           </Button>
-          <Button onClick={() => setDialogOpen(true)} data-testid="button-add-contact">
+          <Button onClick={() => setDialogOpen(true)} data-testid="button-add-contact" className="flex-1 sm:flex-none">
             <Plus className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
-            {t('customers.addContact')}
+            <span className="hidden sm:inline">{t('customers.addContact')}</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </div>
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1 max-w-full sm:max-w-md">
           <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={t('customers.searchPlaceholder')}
@@ -109,7 +143,7 @@ export default function Customers() {
       {filteredContacts.length > 0 ? (
         <ContactsTable
           contacts={filteredContacts}
-          onEdit={(contact) => console.log('Edit:', contact)}
+          onEdit={handleOpenEditDialog}
           onDelete={handleDelete}
         />
       ) : (
@@ -125,6 +159,14 @@ export default function Customers() {
         onOpenChange={setDialogOpen}
         onSubmit={handleAddContact}
       />
+
+      <EditContactDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        contact={selectedContact}
+        onSubmit={handleEditContact}
+      />
     </div>
   );
 }
+

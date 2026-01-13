@@ -49,6 +49,7 @@ export const units = pgTable("units", {
   unitNumber: text("unit_number").notNull(),
   type: text("type").notNull(),
   size: integer("size"),
+  electricityNumber: text("electricity_number"),
   status: text("status").notNull().default('vacant'),
   createdAt: timestamp("created_at").notNull().$defaultFn(() => new Date()),
 });
@@ -137,6 +138,7 @@ export const updateContractSchema = z.object({
   rentAmount: z.union([z.string(), z.number()]).optional().transform(val =>
     val === undefined ? undefined : (typeof val === 'string' ? val : val.toString())
   ),
+
   securityDeposit: z.union([z.string(), z.number(), z.null()]).optional().transform(val =>
     val === undefined || val === null ? undefined : (typeof val === 'string' ? val : val.toString())
   ),

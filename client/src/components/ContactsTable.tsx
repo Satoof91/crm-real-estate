@@ -39,7 +39,7 @@ const statusColors: Record<string, "default" | "secondary" | "destructive" | "ou
 
 export function ContactsTable({ contacts, onEdit, onDelete }: ContactsTableProps) {
   return (
-    <div className="border rounded-lg">
+    <div className="border rounded-lg overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -81,8 +81,8 @@ export function ContactsTable({ contacts, onEdit, onDelete }: ContactsTableProps
                       <Pencil className="mr-2 h-4 w-4" />
                       Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => onDelete?.(contact)} 
+                    <DropdownMenuItem
+                      onClick={() => onDelete?.(contact)}
                       className="text-destructive"
                       data-testid={`button-delete-${contact.id}`}
                     >

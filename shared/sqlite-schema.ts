@@ -46,6 +46,7 @@ export const units = sqliteTable("units", {
   unitNumber: text("unit_number").notNull(),
   type: text("type").notNull(),
   size: integer("size"),
+  electricityNumber: text("electricity_number"),
   status: text("status").notNull().default('vacant'),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
@@ -146,6 +147,7 @@ export const updateContractSchema = z.object({
     if (typeof val === 'string') return new Date(val);
     return val;
   }, z.date().optional()).transform(date => date ? date.toISOString() : undefined),
+
   rentAmount: z.union([z.string(), z.number()]).optional().transform(val =>
     val === undefined ? undefined : (typeof val === 'string' ? val : val.toString())
   ),
