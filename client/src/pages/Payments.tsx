@@ -109,19 +109,19 @@ export default function Payments() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{t("payments.title")}</h1>
-          <p className="text-muted-foreground mt-2">{t("payments.subtitle")}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">{t("payments.title")}</h1>
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base">{t("payments.subtitle")}</p>
         </div>
-        <Button variant="outline" onClick={() => exportToCSV(allPayments, 'payments.csv')}>
+        <Button variant="outline" onClick={() => exportToCSV(allPayments, 'payments.csv')} className="w-full sm:w-auto">
           <Download className="h-4 w-4 mr-2" />
           {t("common.exportCSV")}
         </Button>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={t("common.search") || "Search..."}
@@ -130,32 +130,34 @@ export default function Payments() {
             className="pl-9"
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <Filter className="h-4 w-4 mr-2" />
-            <SelectValue placeholder={t("common.filter")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("payments.tabs.allPayments")}</SelectItem>
-            <SelectItem value="pending">{t("payments.tabs.pending")}</SelectItem>
-            <SelectItem value="overdue">{t("payments.tabs.overdue")}</SelectItem>
-            <SelectItem value="paid">{t("payments.tabs.paid")}</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={customerFilter} onValueChange={setCustomerFilter}>
-          <SelectTrigger className="w-[220px]">
-            <Users className="h-4 w-4 mr-2" />
-            <SelectValue placeholder={t("payments.filterByCustomer") || "Filter by Customer"} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("payments.allCustomers") || "All Customers"}</SelectItem>
-            {contacts.map((contact: any) => (
-              <SelectItem key={contact.id} value={contact.id}>
-                {contact.fullName}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder={t("common.filter")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("payments.tabs.allPayments")}</SelectItem>
+              <SelectItem value="pending">{t("payments.tabs.pending")}</SelectItem>
+              <SelectItem value="overdue">{t("payments.tabs.overdue")}</SelectItem>
+              <SelectItem value="paid">{t("payments.tabs.paid")}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={customerFilter} onValueChange={setCustomerFilter}>
+            <SelectTrigger className="w-full sm:w-[220px]">
+              <Users className="h-4 w-4 mr-2" />
+              <SelectValue placeholder={t("payments.filterByCustomer") || "Filter by Customer"} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("payments.allCustomers") || "All Customers"}</SelectItem>
+              {contacts.map((contact: any) => (
+                <SelectItem key={contact.id} value={contact.id}>
+                  {contact.fullName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {allPayments.length > 0 ? (

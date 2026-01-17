@@ -37,8 +37,8 @@ export function PaymentsTable({ payments, onMarkPaid }: PaymentsTableProps) {
   };
 
   return (
-    <div className="border rounded-lg">
-      <Table>
+    <div className="border rounded-lg overflow-x-auto">
+      <Table className="min-w-[700px]">
         <TableHeader>
           <TableRow>
             <TableHead>{t('payments.table.unit')}</TableHead>

@@ -224,78 +224,76 @@ function AppContent() {
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 border-r border-white/20 glass overflow-hidden">
-              <div className="flex flex-col h-full max-h-screen">
-                <div className="flex-1 overflow-y-auto p-8">
-                  <div className="flex items-center gap-3 mb-8">
-                    <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow-primary">
-                      <LayoutDashboard className="h-6 w-6 text-white" />
-                    </div>
-                    <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
-                      PropManager
-                    </h1>
+            <SheetContent side="left" className="w-72 p-0 border-r border-white/20 glass flex flex-col" style={{ height: '100dvh', maxHeight: '100dvh' }}>
+              <div className="flex-1 overflow-y-auto p-8 min-h-0">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow-primary">
+                    <LayoutDashboard className="h-6 w-6 text-white" />
                   </div>
-
-                  <nav className="space-y-2">
-                    {links.map((link) => {
-                      const Icon = link.icon;
-                      const isActive = location === link.path;
-                      return (
-                        <Link
-                          key={link.path}
-                          href={link.path}
-                          className={cn(
-                            "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group",
-                            isActive
-                              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 translate-x-1"
-                              : "text-muted-foreground hover:bg-white/50 hover:text-foreground hover:translate-x-1"
-                          )}
-                        >
-                          <Icon className={cn("h-5 w-5 transition-colors", isActive ? "text-white" : "text-muted-foreground group-hover:text-primary")} />
-                          <span className="font-medium">{t(link.labelKey)}</span>
-                        </Link>
-                      );
-                    })}
-
-                    <button
-                      onClick={() => {
-                        setIsNotificationOpen(true);
-                      }}
-                      className={cn(
-                        "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group",
-                        "text-muted-foreground hover:bg-white/50 hover:text-foreground hover:translate-x-1"
-                      )}
-                    >
-                      <Bell className="h-5 w-5 transition-colors text-muted-foreground group-hover:text-primary" />
-                      <span className="font-medium">{t("nav.notifications")}</span>
-                    </button>
-                  </nav>
+                  <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
+                    PropManager
+                  </h1>
                 </div>
 
-                <div className="mt-auto p-6 border-t border-white/10 bg-white/30 backdrop-blur-md space-y-6">
-                  <div className="flex items-center justify-between gap-2">
-                    <ThemeToggle />
-                    <LanguageSwitcher />
-                  </div>
+                <nav className="space-y-2">
+                  {links.map((link) => {
+                    const Icon = link.icon;
+                    const isActive = location === link.path;
+                    return (
+                      <Link
+                        key={link.path}
+                        href={link.path}
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group",
+                          isActive
+                            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 translate-x-1"
+                            : "text-muted-foreground hover:bg-white/50 hover:text-foreground hover:translate-x-1"
+                        )}
+                      >
+                        <Icon className={cn("h-5 w-5 transition-colors", isActive ? "text-white" : "text-muted-foreground group-hover:text-primary")} />
+                        <span className="font-medium">{t(link.labelKey)}</span>
+                      </Link>
+                    );
+                  })}
 
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border-2 border-white shadow-sm shrink-0">
-                      <UsersIcon className="h-5 w-5 text-gray-600" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-sm text-foreground truncate">{user?.fullName || 'User'}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{user?.role || 'Admin'}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl shrink-0"
-                      onClick={() => logoutMutation.mutate()}
-                      title={t("nav.logout")}
-                    >
-                      <LogOut className="h-5 w-5" />
-                    </Button>
+                  <button
+                    onClick={() => {
+                      setIsNotificationOpen(true);
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group",
+                      "text-muted-foreground hover:bg-white/50 hover:text-foreground hover:translate-x-1"
+                    )}
+                  >
+                    <Bell className="h-5 w-5 transition-colors text-muted-foreground group-hover:text-primary" />
+                    <span className="font-medium">{t("nav.notifications")}</span>
+                  </button>
+                </nav>
+              </div>
+
+              <div className="shrink-0 p-6 border-t border-white/10 bg-white/30 backdrop-blur-md space-y-6">
+                <div className="flex items-center justify-between gap-2">
+                  <ThemeToggle />
+                  <LanguageSwitcher />
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border-2 border-white shadow-sm shrink-0">
+                    <UsersIcon className="h-5 w-5 text-gray-600" />
                   </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-sm text-foreground truncate">{user?.fullName || 'User'}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{user?.role || 'Admin'}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl shrink-0"
+                    onClick={() => logoutMutation.mutate()}
+                    title={t("nav.logout")}
+                  >
+                    <LogOut className="h-5 w-5" />
+                  </Button>
                 </div>
               </div>
             </SheetContent>

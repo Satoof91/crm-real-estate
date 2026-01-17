@@ -161,12 +161,12 @@ export default function Properties() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{t('properties.title')}</h1>
-          <p className="text-muted-foreground mt-2">{t('properties.subtitle')}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">{t('properties.title')}</h1>
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base">{t('properties.subtitle')}</p>
         </div>
-        <Button onClick={() => setBuildingDialogOpen(true)} data-testid="button-add-building">
+        <Button onClick={() => setBuildingDialogOpen(true)} data-testid="button-add-building" className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
           {t('properties.addBuilding')}
         </Button>
@@ -182,13 +182,13 @@ export default function Properties() {
               <div key={building.id} className="border-b last:border-b-0">
                 {/* Building Header */}
                 <div className="p-4 hover:bg-accent/50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 flex-1">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => toggleBuilding(building.id)}
-                        className="p-0 h-auto"
+                        className="p-0 h-auto shrink-0"
                       >
                         {isExpanded ? (
                           <ChevronDown className="h-5 w-5" />
@@ -196,13 +196,13 @@ export default function Properties() {
                           <ChevronRight className="h-5 w-5" />
                         )}
                       </Button>
-                      <div>
-                        <h3 className="font-semibold text-lg">{building.name}</h3>
-                        <p className="text-sm text-muted-foreground">{building.address}</p>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-base sm:text-lg truncate">{building.name}</h3>
+                        <p className="text-sm text-muted-foreground truncate">{building.address}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right rtl:text-left">
+                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pl-8 sm:pl-0">
+                      <div className="text-left sm:text-right rtl:text-right rtl:sm:text-left">
                         <p className="text-sm font-medium">
                           {buildingUnits.length} / {building.totalUnits} {t('properties.units')}
                         </p>
@@ -214,8 +214,9 @@ export default function Properties() {
                         size="sm"
                         onClick={() => handleAddUnitClick(building.id)}
                       >
-                        <Plus className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
-                        {t('properties.addUnit')}
+                        <Plus className="h-4 w-4 mr-1 sm:mr-2 rtl:mr-0 rtl:ml-1 rtl:sm:ml-2" />
+                        <span className="hidden sm:inline">{t('properties.addUnit')}</span>
+                        <span className="sm:hidden">Add</span>
                       </Button>
                     </div>
                   </div>

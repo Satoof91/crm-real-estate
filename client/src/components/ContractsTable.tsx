@@ -64,8 +64,8 @@ export function ContractsTable({ contracts, onView, onEdit, onRenew, onDelete }:
   };
 
   return (
-    <div className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
-      <Table>
+    <div className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 overflow-x-auto">
+      <Table className="min-w-[700px]">
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className="font-semibold">{t('contracts.table.unit')}</TableHead>

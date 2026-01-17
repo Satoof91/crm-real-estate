@@ -174,25 +174,25 @@ export default function Contracts() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{t('contracts.title')}</h1>
-          <p className="text-muted-foreground mt-2">{t('contracts.subtitle')}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">{t('contracts.title')}</h1>
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base">{t('contracts.subtitle')}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => exportToCSV(enrichedContracts, 'contracts.csv')}>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button variant="outline" onClick={() => exportToCSV(enrichedContracts, 'contracts.csv')} className="w-full sm:w-auto">
             <Download className="h-4 w-4 mr-2" />
             {t("common.exportCSV")}
           </Button>
-          <Button onClick={() => setDialogOpen(true)} data-testid="button-add-contract">
+          <Button onClick={() => setDialogOpen(true)} data-testid="button-add-contract" className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2 rtl:mr-0 rtl:ml-2" />
             {t('contracts.newContract')}
           </Button>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={t("common.search") || "Search..."}
@@ -202,7 +202,7 @@ export default function Contracts() {
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-full sm:w-[180px]">
             <Filter className="h-4 w-4 mr-2" />
             <SelectValue placeholder={t("common.filter")} />
           </SelectTrigger>
