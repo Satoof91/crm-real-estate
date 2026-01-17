@@ -54,7 +54,7 @@ export default function Customers() {
         ...data,
         isWhatsAppEnabled: data.isWhatsAppEnabled ? 1 : 0,
       };
-      await apiRequest('PUT', `/api/contacts/${data.id}`, contactData);
+      await apiRequest('PATCH', `/api/contacts/${data.id}`, contactData);
       queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
       toast({
         title: t('customers.contactUpdated'),

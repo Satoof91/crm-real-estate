@@ -816,11 +816,25 @@ function generatePaymentSchedule(contract: any) {
 
   console.log(`Total payments to generate: ${paymentCount}`);
 
-  // Calculate the amount per payment (total rent divided by number of payments)
-  const totalRent = parseFloat(rentAmount);
-  const amountPerPayment = (totalRent / paymentCount).toFixed(2);
+  // rentAmount is the ANNUAL rent. Divide by payments per year to get per-payment amount
+  const annualRent = parseFloat(rentAmount);
 
-  console.log(`Total rent: ${totalRent}, Amount per payment: ${amountPerPayment}`);
+  // Calculate payments per year based on frequency
+  const getPaymentsPerYear = (frequency: string): number => {
+    switch (frequency.toLowerCase()) {
+      case 'monthly': return 12;
+      case 'quarterly': return 4;
+      case 'semi-annually': return 2;
+      case 'yearly': return 1;
+      case 'weekly': return 52;
+      default: return 12; // Default to monthly
+    }
+  };
+
+  const paymentsPerYear = getPaymentsPerYear(contract.paymentFrequency);
+  const amountPerPayment = (annualRent / paymentsPerYear).toFixed(2);
+
+  console.log(`Annual rent: ${annualRent}, Payments/year: ${paymentsPerYear}, Amount per payment: ${amountPerPayment}`);
 
   let iterationCount = 0;
   const maxIterations = 1000; // Safety limit

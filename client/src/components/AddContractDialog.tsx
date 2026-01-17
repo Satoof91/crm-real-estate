@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { HijriDatePicker } from "@/components/HijriDatePicker";
 
 interface AddContractDialogProps {
   open: boolean;
@@ -197,9 +198,14 @@ export function AddContractDialog({ open, onOpenChange, onSubmit }: AddContractD
                 name="startDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('contracts.startDate')} *</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} data-testid="input-start-date" />
+                      <HijriDatePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                        label={t('contracts.startDate')}
+                        required
+                        data-testid="input-start-date"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -210,9 +216,14 @@ export function AddContractDialog({ open, onOpenChange, onSubmit }: AddContractD
                 name="endDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('contracts.endDate')} *</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} data-testid="input-end-date" />
+                      <HijriDatePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                        label={t('contracts.endDate')}
+                        required
+                        data-testid="input-end-date"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

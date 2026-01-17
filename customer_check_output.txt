@@ -1,0 +1,29 @@
+'contacts' table columns:
+  - id (character varying)
+  - user_id (character varying)
+  - full_name (text)
+  - phone (text)
+  - is_whatsapp_enabled (integer)
+  - email (text)
+  - national_id (text)
+  - language (text)
+  - status (text)
+  - created_at (timestamp without time zone)
+
+Total contacts in Neon: 11
+
+Sample contacts:
+  - عارف احمد الفحل (status: prospect, user_id: 63a493aef97dbfbde16f6e0fb941ec12)
+  - حسين جاسم الشهيب (status: prospect, user_id: 63a493aef97dbfbde16f6e0fb941ec12)
+  - عيسى سالم الراجح (status: prospect, user_id: 63a493aef97dbfbde16f6e0fb941ec12)
+  - مصطفى الحماد (status: prospect, user_id: 63a493aef97dbfbde16f6e0fb941ec12)
+  - سعيد العطافي (status: prospect, user_id: 63a493aef97dbfbde16f6e0fb941ec12)
+  - علي أحمد بوشاجع (status: prospect, user_id: 63a493aef97dbfbde16f6e0fb941ec12)
+  - ناصر عارف بوشاجع (status: prospect, user_id: 63a493aef97dbfbde16f6e0fb941ec12)
+  - علي طاهر الرويشد (status: prospect, user_id: 63a493aef97dbfbde16f6e0fb941ec12)
+  - عبدالمجيد علي الرويشد (status: prospect, user_id: 63a493aef97dbfbde16f6e0fb941ec12)
+  - كميل سلمان الحماد (status: prospect, user_id: 63a493aef97dbfbde16f6e0fb941ec12)
+
+Users in Neon:
+  - admin (role: admin, id: e173740f5ae890c296b03010f98cd0f2)
+  - Radhi (role: manager, id: 63a493aef97dbfbde16f6e0fb941ec12)

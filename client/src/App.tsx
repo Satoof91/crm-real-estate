@@ -224,9 +224,9 @@ function AppContent() {
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 border-r border-white/20 glass">
-              <div className="flex flex-col h-full">
-                <div className="p-8">
+            <SheetContent side="left" className="w-72 p-0 border-r border-white/20 glass overflow-hidden">
+              <div className="flex flex-col h-full max-h-screen">
+                <div className="flex-1 overflow-y-auto p-8">
                   <div className="flex items-center gap-3 mb-8">
                     <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow-primary">
                       <LayoutDashboard className="h-6 w-6 text-white" />
