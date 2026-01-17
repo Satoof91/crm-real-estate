@@ -136,7 +136,9 @@
       "yearly": "Yearly"
     },
     "markPaid": "Mark Paid",
-    "noPayments": "No payments yet. Payments are automatically generated when you create contracts."
+    "noPayments": "No payments yet. Payments are automatically generated when you create contracts.",
+    "allCustomers": "All Customers",
+    "filterByCustomer": "Filter by Customer"
   },
   "contracts": {
     "title": "Contracts & Leases",

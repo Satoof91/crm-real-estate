@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Search, Filter } from "lucide-react";
+import { Download, Search, Filter, Users } from "lucide-react";
 import { exportToCSV } from "@/lib/export";
 import { useState } from "react";
 
@@ -16,6 +16,7 @@ export default function Payments() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [customerFilter, setCustomerFilter] = useState('all');
 
   const { data: paymentsResponse, isLoading: paymentsLoading } = useQuery<any>({
     queryKey: ['/api/payments'],
@@ -79,6 +80,7 @@ export default function Payments() {
       status,
       unitNumber: unit?.unitNumber || 'N/A',
       tenantName: contact?.fullName || 'N/A',
+      contactId: contract?.contactId || null,
       dueDate: new Date(payment.dueDate),
       paidDate: payment.paidDate ? new Date(payment.paidDate) : undefined,
     };
@@ -91,8 +93,9 @@ export default function Payments() {
       payment.amount.toString().includes(searchTerm);
 
     const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
+    const matchesCustomer = customerFilter === 'all' || payment.contactId === customerFilter;
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesCustomer;
   }).sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime()); // Sort by earliest/soonest first
 
   const allPayments = filteredPayments;
@@ -137,6 +140,20 @@ export default function Payments() {
             <SelectItem value="pending">{t("payments.tabs.pending")}</SelectItem>
             <SelectItem value="overdue">{t("payments.tabs.overdue")}</SelectItem>
             <SelectItem value="paid">{t("payments.tabs.paid")}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={customerFilter} onValueChange={setCustomerFilter}>
+          <SelectTrigger className="w-[220px]">
+            <Users className="h-4 w-4 mr-2" />
+            <SelectValue placeholder={t("payments.filterByCustomer") || "Filter by Customer"} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("payments.allCustomers") || "All Customers"}</SelectItem>
+            {contacts.map((contact: any) => (
+              <SelectItem key={contact.id} value={contact.id}>
+                {contact.fullName}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
