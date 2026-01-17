@@ -377,8 +377,8 @@ export function SendNotificationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl" dir={isRTL ? 'rtl' : 'ltr'}>
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />
             {language === 'ar' ? 'إرسال إشعار' : 'Send Notification'}
@@ -390,7 +390,7 @@ export function SendNotificationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 flex-1 overflow-y-auto pr-2">
           {/* Recipient Type */}
           <div className="space-y-2">
             <Label>{language === 'ar' ? 'إرسال إلى' : 'Send To'}</Label>
@@ -524,7 +524,7 @@ export function SendNotificationDialog({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

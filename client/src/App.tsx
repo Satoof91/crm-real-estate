@@ -136,8 +136,8 @@ function AppContent() {
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       {/* Premium Glass Sidebar */}
-      <div className="w-72 glass border-r border-white/20 hidden md:flex flex-col z-20 relative">
-        <div className="p-8">
+      <div className="w-72 glass border-r border-white/20 hidden md:flex flex-col z-20 relative overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-8 min-h-0">
           <div className="flex items-center gap-3 mb-8">
             <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow-primary">
               <LayoutDashboard className="h-6 w-6 text-white" />
@@ -183,7 +183,7 @@ function AppContent() {
           </nav>
         </div>
 
-        <div className="mt-auto p-6 border-t border-white/10 bg-white/30 backdrop-blur-md space-y-6">
+        <div className="shrink-0 p-6 border-t border-white/10 bg-white/30 backdrop-blur-md space-y-6">
           <div className="flex items-center justify-between gap-2">
             <ThemeToggle />
             <LanguageSwitcher />

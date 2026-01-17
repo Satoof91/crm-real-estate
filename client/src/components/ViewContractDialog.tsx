@@ -44,15 +44,15 @@ export function ViewContractDialog({ open, onOpenChange, contract }: ViewContrac
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="shrink-0">
           <DialogTitle>{t('contracts.contractDetails')}</DialogTitle>
           <DialogDescription>
             {t('contracts.viewContract')}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 overflow-y-auto flex-1 pr-2">
           {/* Contract Status */}
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">{t('common.status')}</span>
