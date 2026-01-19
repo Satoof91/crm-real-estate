@@ -135,6 +135,12 @@
       "yearly": "سنوي"
     },
     "markPaid": "تسجيل كمدفوع",
+    "markUnpaid": "إلغاء الدفع",
+    "confirmDelete": "هل أنت متأكد من حذف هذه الدفعة؟",
+    "paymentMarkedUnpaid": "تم إلغاء تسجيل الدفعة",
+    "paymentUnpaidDesc": "تم إلغاء تسجيل دفعة بقيمة {{amount}}$.",
+    "paymentDeleted": "تم حذف الدفعة",
+    "paymentDeletedDesc": "تم حذف دفعة بقيمة {{amount}}$.",
     "noPayments": "لا توجد مدفوعات بعد. يتم إنشاء المدفوعات تلقائياً عند إنشاء العقود.",
     "allCustomers": "جميع العملاء",
     "filterByCustomer": "تصفية حسب العميل"

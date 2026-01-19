@@ -136,6 +136,12 @@
       "yearly": "Yearly"
     },
     "markPaid": "Mark Paid",
+    "markUnpaid": "Mark Unpaid",
+    "confirmDelete": "Are you sure you want to delete this payment?",
+    "paymentMarkedUnpaid": "Payment Marked Unpaid",
+    "paymentUnpaidDesc": "Payment of ${{amount}} has been marked as unpaid.",
+    "paymentDeleted": "Payment Deleted",
+    "paymentDeletedDesc": "Payment of ${{amount}} has been deleted.",
     "noPayments": "No payments yet. Payments are automatically generated when you create contracts.",
     "allCustomers": "All Customers",
     "filterByCustomer": "Filter by Customer"
