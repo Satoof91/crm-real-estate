@@ -21,7 +21,7 @@ import {
   type Payment,
   type InsertPayment,
 } from "@shared/sqlite-schema";
-import { eq, and, gte, lte, desc, or, count } from "drizzle-orm";
+import { eq, and, gte, lte, desc, asc, or, count } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -206,7 +206,7 @@ export class DbStorage implements IStorage {
       }
       return db.select().from(units)
         .where(eq(units.buildingId, buildingId))
-        .orderBy(desc(units.createdAt));
+        .orderBy(asc(units.unitNumber));
     }
 
     // Join with buildings to filter by userId
@@ -214,7 +214,7 @@ export class DbStorage implements IStorage {
       .from(units)
       .innerJoin(buildings, eq(units.buildingId, buildings.id))
       .where(eq(buildings.userId, userId))
-      .orderBy(desc(units.createdAt));
+      .orderBy(asc(units.unitNumber));
 
     return result.map(r => r.unit);
   }
@@ -299,7 +299,7 @@ export class DbStorage implements IStorage {
       query = query.where(eq(payments.contractId, contractId)) as any;
     }
 
-    query = query.orderBy(desc(payments.dueDate)) as any;
+    query = query.orderBy(asc(payments.dueDate)) as any;
 
     if (limit !== undefined) {
       query = query.limit(limit) as any;

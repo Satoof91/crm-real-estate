@@ -96,7 +96,7 @@ export default function Payments() {
     const matchesCustomer = customerFilter === 'all' || payment.contactId === customerFilter;
 
     return matchesSearch && matchesStatus && matchesCustomer;
-  }).sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime()); // Sort by earliest/soonest first
+  });
 
   const allPayments = filteredPayments;
   const pendingPayments = filteredPayments.filter(p => p.status === 'pending');

@@ -255,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const buildingId = req.query.buildingId as string | undefined;
       const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 50;
+      const limit = parseInt(req.query.limit as string) || 1000;
       const offset = (page - 1) * limit;
 
       const userId = (req.user as any).id;
@@ -510,7 +510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/payments", isAuthenticated, async (req, res) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 50;
+      const limit = parseInt(req.query.limit as string) || 1000;
       const offset = (page - 1) * limit;
       const contractId = req.query.contractId as string | undefined;
 
