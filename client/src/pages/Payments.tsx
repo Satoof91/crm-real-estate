@@ -64,6 +64,55 @@ export default function Payments() {
     }
   };
 
+  const handleMarkUnpaid = async (payment: any) => {
+    try {
+      await apiRequest('PATCH', `/api/payments/${payment.id}`, {
+        status: 'pending',
+        paidDate: null,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['/api/payments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+
+      toast({
+        title: t("payments.paymentMarkedUnpaid") || "Payment Marked Unpaid",
+        description: t("payments.paymentUnpaidDesc", { amount: payment.amount }) || `Payment of $${payment.amount} marked as unpaid`,
+      });
+    } catch (error: any) {
+      toast({
+        title: t("common.error"),
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeletePayment = async (payment: any) => {
+    if (!confirm(t("payments.confirmDelete") || `Are you sure you want to delete this payment of $${payment.amount}?`)) {
+      return;
+    }
+
+    try {
+      await apiRequest('DELETE', `/api/payments/${payment.id}`);
+
+      queryClient.invalidateQueries({ queryKey: ['/api/payments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+
+      toast({
+        title: t("payments.paymentDeleted") || "Payment Deleted",
+        description: t("payments.paymentDeletedDesc", { amount: payment.amount }) || `Payment of $${payment.amount} has been deleted`,
+      });
+    } catch (error: any) {
+      toast({
+        title: t("common.error"),
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const enrichedPayments = payments.map(payment => {
     const contract = contracts.find(c => c.id === payment.contractId);
     const unit = contract ? units.find(u => u.id === contract.unitId) : null;
@@ -172,24 +221,32 @@ export default function Payments() {
             <PaymentsTable
               payments={allPayments}
               onMarkPaid={handleMarkPaid}
+              onMarkUnpaid={handleMarkUnpaid}
+              onDelete={handleDeletePayment}
             />
           </TabsContent>
           <TabsContent value="pending" className="mt-6">
             <PaymentsTable
               payments={pendingPayments}
               onMarkPaid={handleMarkPaid}
+              onMarkUnpaid={handleMarkUnpaid}
+              onDelete={handleDeletePayment}
             />
           </TabsContent>
           <TabsContent value="overdue" className="mt-6">
             <PaymentsTable
               payments={overduePayments}
               onMarkPaid={handleMarkPaid}
+              onMarkUnpaid={handleMarkUnpaid}
+              onDelete={handleDeletePayment}
             />
           </TabsContent>
           <TabsContent value="paid" className="mt-6">
             <PaymentsTable
               payments={paidPayments}
               onMarkPaid={handleMarkPaid}
+              onMarkUnpaid={handleMarkUnpaid}
+              onDelete={handleDeletePayment}
             />
           </TabsContent>
         </Tabs>

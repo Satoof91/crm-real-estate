@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Clock } from "lucide-react";
+import { CheckCircle2, Clock, Undo2, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 
@@ -25,9 +25,11 @@ interface Payment {
 interface PaymentsTableProps {
   payments: Payment[];
   onMarkPaid?: (payment: Payment) => void;
+  onMarkUnpaid?: (payment: Payment) => void;
+  onDelete?: (payment: Payment) => void;
 }
 
-export function PaymentsTable({ payments, onMarkPaid }: PaymentsTableProps) {
+export function PaymentsTable({ payments, onMarkPaid, onMarkUnpaid, onDelete }: PaymentsTableProps) {
   const { t } = useTranslation();
 
   const statusConfig = {
@@ -38,7 +40,7 @@ export function PaymentsTable({ payments, onMarkPaid }: PaymentsTableProps) {
 
   return (
     <div className="border rounded-lg overflow-x-auto">
-      <Table className="min-w-[700px]">
+      <Table className="min-w-[800px]">
         <TableHeader>
           <TableRow>
             <TableHead>{t('payments.table.unit')}</TableHead>
@@ -47,7 +49,7 @@ export function PaymentsTable({ payments, onMarkPaid }: PaymentsTableProps) {
             <TableHead>{t('payments.table.dueDate')}</TableHead>
             <TableHead>{t('common.status')}</TableHead>
             <TableHead>{t('payments.table.paidDate')}</TableHead>
-            <TableHead className="w-32">{t('common.actions')}</TableHead>
+            <TableHead className="w-48">{t('common.actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -70,16 +72,39 @@ export function PaymentsTable({ payments, onMarkPaid }: PaymentsTableProps) {
                   {payment.paidDate ? format(payment.paidDate, 'MMM dd, yyyy') : '-'}
                 </TableCell>
                 <TableCell>
-                  {payment.status === 'pending' || payment.status === 'overdue' ? (
+                  <div className="flex items-center gap-2">
+                    {(payment.status === 'pending' || payment.status === 'overdue') && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onMarkPaid?.(payment)}
+                        data-testid={`button-mark-paid-${payment.id}`}
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-1" />
+                        {t('payments.markPaid')}
+                      </Button>
+                    )}
+                    {payment.status === 'paid' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onMarkUnpaid?.(payment)}
+                        data-testid={`button-mark-unpaid-${payment.id}`}
+                      >
+                        <Undo2 className="h-4 w-4 mr-1" />
+                        {t('payments.markUnpaid') || 'Mark Unpaid'}
+                      </Button>
+                    )}
                     <Button
                       size="sm"
-                      variant="outline"
-                      onClick={() => onMarkPaid?.(payment)}
-                      data-testid={`button-mark-paid-${payment.id}`}
+                      variant="ghost"
+                      onClick={() => onDelete?.(payment)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      data-testid={`button-delete-${payment.id}`}
                     >
-                      {t('payments.markPaid')}
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  ) : null}
+                  </div>
                 </TableCell>
               </TableRow>
             );
@@ -89,3 +114,4 @@ export function PaymentsTable({ payments, onMarkPaid }: PaymentsTableProps) {
     </div>
   );
 }
+
