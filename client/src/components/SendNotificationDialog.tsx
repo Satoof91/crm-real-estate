@@ -191,6 +191,7 @@ export function SendNotificationDialog({
   const [recipientName, setRecipientName] = useState(defaultRecipient?.name || '');
   const [message, setMessage] = useState('');
   const [useTemplate, setUseTemplate] = useState(true);
+  const [messageLanguage, setMessageLanguage] = useState<'ar' | 'en'>(language as 'ar' | 'en');
 
   // Load contacts for recipient selection
   const [contacts, setContacts] = useState<any[]>([]);
@@ -245,11 +246,14 @@ export function SendNotificationDialog({
       setRecipientName(contact.fullName || '');
       setSelectedContact(contactId);
 
-      // Fetch contract data to get unit and building info
+      // Fetch contract and payment data
       try {
         const contractsResponse = await fetch('/api/contracts');
-        if (contractsResponse.ok) {
+        const paymentsResponse = await fetch('/api/payments');
+
+        if (contractsResponse.ok && paymentsResponse.ok) {
           const contractsData = await contractsResponse.json();
+          const paymentsData = await paymentsResponse.json();
           const activeContract = (contractsData.data || []).find((c: any) => c.contactId === contactId);
 
           let unitNumber = 'N/A';
@@ -272,42 +276,26 @@ export function SendNotificationDialog({
               }
             }
 
-            // Calculate per-payment amount based on frequency
-            const rentAmount = parseFloat(activeContract.rentAmount) || 0;
-            const frequency = activeContract.paymentFrequency?.toLowerCase() || 'monthly';
-
-            // Contract rent amount is yearly, divide by frequency
-            let paymentsPerYear = 12; // default monthly
-            switch (frequency) {
-              case 'weekly':
-                paymentsPerYear = 52;
-                break;
-              case 'monthly':
-                paymentsPerYear = 12;
-                break;
-              case 'quarterly':
-                paymentsPerYear = 4;
-                break;
-              case 'semi-annually':
-                paymentsPerYear = 2;
-                break;
-              case 'yearly':
-                paymentsPerYear = 1;
-                break;
+            // Get actual payment amount from payments data (pending payments for this contract)
+            const contractPayments = (paymentsData.data || []).filter((p: any) => p.contractId === activeContract.id);
+            if (contractPayments.length > 0) {
+              // Get the first pending payment or the most recent one
+              const pendingPayment = contractPayments.find((p: any) => p.status === 'pending');
+              const relevantPayment = pendingPayment || contractPayments[0];
+              paymentAmount = parseFloat(relevantPayment.amount).toLocaleString();
+            } else {
+              // Fallback to contract rent amount if no payments found
+              paymentAmount = parseFloat(activeContract.rentAmount).toLocaleString();
             }
-
-            // If rent amount seems like a yearly amount (high value), divide accordingly
-            // Otherwise, assume it's already the per-payment amount
-            paymentAmount = rentAmount.toLocaleString();
 
             // Extract day from contract start date
             const startDate = new Date(activeContract.startDate);
             paymentDay = startDate.getDate().toString();
           }
 
-          // Update template message with actual values
+          // Update template message with actual values using selected message language
           if (useTemplate && notificationType !== 'custom') {
-            const template = quickTemplates[language as 'ar' | 'en'][notificationType as keyof typeof quickTemplates['ar']];
+            const template = quickTemplates[messageLanguage][notificationType as keyof typeof quickTemplates['ar']];
             if (template) {
               let msg = template;
               msg = msg.replace(/{{name}}/g, contact.fullName || '');
@@ -315,7 +303,7 @@ export function SendNotificationDialog({
               msg = msg.replace(/{{building}}/g, buildingName);
               msg = msg.replace(/{{amount}}/g, paymentAmount);
               msg = msg.replace(/{{paymentDay}}/g, paymentDay);
-              msg = msg.replace(/{{date}}/g, new Date().toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US'));
+              msg = msg.replace(/{{date}}/g, new Date().toLocaleDateString(messageLanguage === 'ar' ? 'ar-SA' : 'en-US'));
               msg = msg.replace(/{{emergency}}/g, '920000000'); // Placeholder emergency number
               setMessage(msg);
             }
@@ -486,6 +474,47 @@ export function SendNotificationDialog({
               </div>
             </>
           )}
+
+          {/* Message Language Toggle */}
+          <div className="space-y-2">
+            <Label>{language === 'ar' ? 'لغة الرسالة' : 'Message Language'}</Label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={messageLanguage === 'ar' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => {
+                  setMessageLanguage('ar');
+                  // Re-fetch with Arabic template
+                  if (selectedContact) {
+                    handleContactSelect(selectedContact);
+                  } else if (useTemplate && notificationType !== 'custom') {
+                    const template = quickTemplates['ar'][notificationType as keyof typeof quickTemplates['ar']];
+                    if (template) setMessage(template);
+                  }
+                }}
+              >
+                العربية
+              </Button>
+              <Button
+                type="button"
+                variant={messageLanguage === 'en' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => {
+                  setMessageLanguage('en');
+                  // Re-fetch with English template
+                  if (selectedContact) {
+                    handleContactSelect(selectedContact);
+                  } else if (useTemplate && notificationType !== 'custom') {
+                    const template = quickTemplates['en'][notificationType as keyof typeof quickTemplates['en']];
+                    if (template) setMessage(template);
+                  }
+                }}
+              >
+                English
+              </Button>
+            </div>
+          </div>
 
           {/* Notification Type */}
           <div className="space-y-2">
