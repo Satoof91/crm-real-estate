@@ -7,8 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Search, Filter, Users } from "lucide-react";
-import { exportToCSV } from "@/lib/export";
+import { Download, Search, Filter, Users, Printer } from "lucide-react";
+import { exportToXLSX, printTable } from "@/lib/export";
 import { useState } from "react";
 
 export default function Payments() {
@@ -163,10 +163,42 @@ export default function Payments() {
           <h1 className="text-2xl sm:text-3xl font-bold">{t("payments.title")}</h1>
           <p className="text-muted-foreground mt-2 text-sm sm:text-base">{t("payments.subtitle")}</p>
         </div>
-        <Button variant="outline" onClick={() => exportToCSV(allPayments, 'payments.csv')} className="w-full sm:w-auto">
-          <Download className="h-4 w-4 mr-2" />
-          {t("common.exportCSV")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => {
+            const exportData = allPayments.map(p => ({
+              [t('payments.table.unit')]: p.unitNumber,
+              [t('payments.table.tenant')]: p.tenantName,
+              [t('payments.table.amount')]: p.amount,
+              [t('payments.table.dueDate')]: p.dueDate instanceof Date ? p.dueDate.toLocaleDateString() : p.dueDate,
+              [t('common.status')]: t(`payments.status.${p.status}`),
+              [t('payments.table.paidDate')]: p.paidDate instanceof Date ? p.paidDate.toLocaleDateString() : (p.paidDate || '-'),
+            }));
+            exportToXLSX(exportData, 'payments.xlsx');
+          }} className="w-full sm:w-auto">
+            <Download className="h-4 w-4 mr-2" />
+            {t("payments.exportXLSX") || "Export Excel"}
+          </Button>
+          <Button variant="outline" onClick={() => {
+            const columns = [
+              { key: 'unitNumber', label: t('payments.table.unit') },
+              { key: 'tenantName', label: t('payments.table.tenant') },
+              { key: 'amount', label: t('payments.table.amount') },
+              { key: 'dueDateFormatted', label: t('payments.table.dueDate') },
+              { key: 'statusLabel', label: t('common.status') },
+              { key: 'paidDateFormatted', label: t('payments.table.paidDate') },
+            ];
+            const printData = allPayments.map(p => ({
+              ...p,
+              dueDateFormatted: p.dueDate instanceof Date ? p.dueDate.toLocaleDateString('ar-SA') : p.dueDate,
+              statusLabel: t(`payments.status.${p.status}`),
+              paidDateFormatted: p.paidDate instanceof Date ? p.paidDate.toLocaleDateString('ar-SA') : (p.paidDate || '-'),
+            }));
+            printTable(t('payments.title'), printData, columns);
+          }} className="w-full sm:w-auto">
+            <Printer className="h-4 w-4 mr-2" />
+            {t("payments.print") || "Print"}
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">

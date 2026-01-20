@@ -143,7 +143,9 @@
     "paymentDeletedDesc": "تم حذف دفعة بقيمة {{amount}}$.",
     "noPayments": "لا توجد مدفوعات بعد. يتم إنشاء المدفوعات تلقائياً عند إنشاء العقود.",
     "allCustomers": "جميع العملاء",
-    "filterByCustomer": "تصفية حسب العميل"
+    "filterByCustomer": "تصفية حسب العميل",
+    "exportXLSX": "تصدير Excel",
+    "print": "طباعة"
   },
   "contracts": {
     "title": "العقود والإيجارات",

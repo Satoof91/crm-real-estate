@@ -144,7 +144,9 @@
     "paymentDeletedDesc": "Payment of ${{amount}} has been deleted.",
     "noPayments": "No payments yet. Payments are automatically generated when you create contracts.",
     "allCustomers": "All Customers",
-    "filterByCustomer": "Filter by Customer"
+    "filterByCustomer": "Filter by Customer",
+    "exportXLSX": "Export Excel",
+    "print": "Print"
   },
   "contracts": {
     "title": "Contracts & Leases",

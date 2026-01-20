@@ -254,7 +254,7 @@ export function SendNotificationDialog({
 
           let unitNumber = 'N/A';
           let buildingName = 'N/A';
-          let rentAmount = 'N/A';
+          let paymentAmount = 'N/A';
           let paymentDay = '1';
 
           if (activeContract) {
@@ -271,7 +271,35 @@ export function SendNotificationDialog({
                 buildingName = building.name || 'N/A';
               }
             }
-            rentAmount = activeContract.rentAmount || 'N/A';
+
+            // Calculate per-payment amount based on frequency
+            const rentAmount = parseFloat(activeContract.rentAmount) || 0;
+            const frequency = activeContract.paymentFrequency?.toLowerCase() || 'monthly';
+
+            // Contract rent amount is yearly, divide by frequency
+            let paymentsPerYear = 12; // default monthly
+            switch (frequency) {
+              case 'weekly':
+                paymentsPerYear = 52;
+                break;
+              case 'monthly':
+                paymentsPerYear = 12;
+                break;
+              case 'quarterly':
+                paymentsPerYear = 4;
+                break;
+              case 'semi-annually':
+                paymentsPerYear = 2;
+                break;
+              case 'yearly':
+                paymentsPerYear = 1;
+                break;
+            }
+
+            // If rent amount seems like a yearly amount (high value), divide accordingly
+            // Otherwise, assume it's already the per-payment amount
+            paymentAmount = rentAmount.toLocaleString();
+
             // Extract day from contract start date
             const startDate = new Date(activeContract.startDate);
             paymentDay = startDate.getDate().toString();
@@ -285,7 +313,7 @@ export function SendNotificationDialog({
               msg = msg.replace(/{{name}}/g, contact.fullName || '');
               msg = msg.replace(/{{unit}}/g, unitNumber);
               msg = msg.replace(/{{building}}/g, buildingName);
-              msg = msg.replace(/{{amount}}/g, rentAmount);
+              msg = msg.replace(/{{amount}}/g, paymentAmount);
               msg = msg.replace(/{{paymentDay}}/g, paymentDay);
               msg = msg.replace(/{{date}}/g, new Date().toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US'));
               msg = msg.replace(/{{emergency}}/g, '920000000'); // Placeholder emergency number
