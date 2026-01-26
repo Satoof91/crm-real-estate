@@ -309,12 +309,125 @@ class NotificationService {
   }
 
   /**
-   * Send payment reminders
+   * Send payment reminders based on payment frequency
+   * - Monthly: 5 days before
+   * - Quarterly, Semi-Annually, Yearly: 30, 15, 5 days before
    */
   async sendPaymentReminders() {
-    // This would be implemented based on your payment schedule logic
-    console.log('Sending payment reminders...');
-    // TODO: Query upcoming payments and send reminders
+    console.log('Starting payment reminders job...');
+
+    try {
+      // Import storage here to avoid circular dependency
+      const { storage } = await import('../storage');
+
+      // Get all upcoming payments within 31 days (to cover 30-day reminders)
+      const upcomingPayments = await storage.getUpcomingPaymentsWithDetails(31);
+      console.log(`Found ${upcomingPayments.length} upcoming payments to check`);
+
+      for (const { payment, contract, contact, unit } of upcomingPayments) {
+        const dueDate = new Date(payment.dueDate);
+        const now = new Date();
+        const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+        // Determine if we should send notification based on frequency
+        const reminderType = this.shouldSendReminder(daysUntilDue, contract.paymentFrequency);
+
+        if (!reminderType) {
+          continue; // Not a notification day for this payment
+        }
+
+        // Check if we already sent this reminder for this payment
+        const alreadySent = await this.checkIfReminderSent(payment.id, reminderType);
+        if (alreadySent) {
+          console.log(`Reminder ${reminderType} already sent for payment ${payment.id}, skipping`);
+          continue;
+        }
+
+        console.log(`Sending ${reminderType} reminder for payment ${payment.id} (${contact.fullName}, ${unit.unitNumber})`);
+
+        // Send the notification
+        await this.sendNotification({
+          type: 'payment_reminder',
+          recipientId: contact.id,
+          recipientPhone: contact.phone || undefined,
+          recipientName: contact.fullName,
+          templateData: {
+            tenantName: contact.fullName,
+            unitNumber: unit.unitNumber,
+            amount: payment.amount,
+            dueDate: dueDate.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }),
+            daysUntilDue: daysUntilDue.toString(),
+            companyName: 'Property Management'
+          },
+          metadata: {
+            paymentId: payment.id,
+            reminderType: reminderType,
+            contractId: contract.id,
+            unitId: unit.id
+          },
+          channel: contact.phone ? 'whatsapp' : 'in_app'
+        });
+
+        console.log(`Successfully queued ${reminderType} reminder for ${contact.fullName}`);
+      }
+
+      console.log('Payment reminders job completed');
+    } catch (error) {
+      console.error('Error in sendPaymentReminders:', error);
+    }
+  }
+
+  /**
+   * Determine if a reminder should be sent based on days until due and frequency
+   * Returns reminder type ('30d', '15d', '5d') or null if not a reminder day
+   */
+  private shouldSendReminder(daysUntilDue: number, frequency: string): string | null {
+    const freq = frequency?.toLowerCase() || 'monthly';
+
+    if (freq === 'monthly') {
+      // Monthly: only 5 days before
+      if (daysUntilDue === 5) return '5d';
+    } else {
+      // Quarterly, Semi-Annually, Yearly: 30, 15, 5 days before
+      if (daysUntilDue === 30) return '30d';
+      if (daysUntilDue === 15) return '15d';
+      if (daysUntilDue === 5) return '5d';
+    }
+
+    return null;
+  }
+
+  /**
+   * Check if a specific reminder type was already sent for a payment
+   */
+  private async checkIfReminderSent(paymentId: string, reminderType: string): Promise<boolean> {
+    try {
+      const existingNotifications = await db
+        .select()
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.type, 'payment_reminder' as any)
+          )
+        );
+
+      // Check metadata for matching paymentId and reminderType
+      for (const notification of existingNotifications) {
+        const metadata = notification.metadata as any;
+        if (metadata?.paymentId === paymentId && metadata?.reminderType === reminderType) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error checking reminder status:', error);
+      return false;
+    }
   }
 
   /**

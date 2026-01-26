@@ -73,6 +73,12 @@ export interface IStorage {
   deletePayment(id: string): Promise<void>;
   deletePendingPaymentsByContract(contractId: string): Promise<number>;
   getUpcomingPayments(userId: string, days: number): Promise<Payment[]>;
+  getUpcomingPaymentsWithDetails(days: number): Promise<{
+    payment: Payment;
+    contract: Contract;
+    contact: Contact;
+    unit: Unit;
+  }[]>;
   getOverduePayments(userId: string): Promise<Payment[]>;
 }
 
@@ -410,6 +416,42 @@ export class DbStorage implements IStorage {
       .orderBy(payments.dueDate);
 
     return result.map(r => r.payment);
+  }
+
+  async getUpcomingPaymentsWithDetails(days: number): Promise<{
+    payment: Payment;
+    contract: Contract;
+    contact: Contact;
+    unit: Unit;
+  }[]> {
+    const now = new Date();
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + days);
+
+    const nowISO = now.toISOString();
+    const futureDateISO = futureDate.toISOString();
+
+    const result = await db
+      .select({
+        payment: payments,
+        contract: contracts,
+        contact: contacts,
+        unit: units
+      })
+      .from(payments)
+      .innerJoin(contracts, eq(payments.contractId, contracts.id))
+      .innerJoin(contacts, eq(contracts.contactId, contacts.id))
+      .innerJoin(units, eq(contracts.unitId, units.id))
+      .where(
+        and(
+          eq(payments.status, 'pending'),
+          gte(payments.dueDate, nowISO),
+          lte(payments.dueDate, futureDateISO)
+        )
+      )
+      .orderBy(payments.dueDate);
+
+    return result;
   }
 }
 
