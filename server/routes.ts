@@ -478,13 +478,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Validated data:', validatedData);
 
+      // Get the existing contract to check for frequency changes
+      const existingContract = await storage.getContract(req.params.id);
+      if (!existingContract) {
+        return res.status(404).json({ error: "Contract not found" });
+      }
+
+      // Check if payment frequency is being changed
+      const isFrequencyChanging = validatedData.paymentFrequency &&
+        validatedData.paymentFrequency !== existingContract.paymentFrequency;
+
       // The schema has already transformed dates to ISO strings and amounts to strings for SQLite
       // No additional transformation needed
       const contract = await storage.updateContract(req.params.id, validatedData);
       if (!contract) {
         return res.status(404).json({ error: "Contract not found" });
       }
-      res.json(fixContractDates(contract));
+
+      const fixedContract = fixContractDates(contract);
+
+      // If frequency changed, regenerate pending payments
+      if (isFrequencyChanging) {
+        console.log(`Payment frequency changed from ${existingContract.paymentFrequency} to ${validatedData.paymentFrequency}`);
+
+        // Delete only pending payments (keep paid and overdue)
+        const deletedCount = await storage.deletePendingPaymentsByContract(req.params.id);
+        console.log(`Deleted ${deletedCount} pending payments`);
+
+        // Calculate the 1st of next month as the starting point
+        const now = new Date();
+        const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+        console.log(`Generating new payments starting from ${nextMonthStart.toISOString()}`);
+
+        // Generate new payments starting from 1st of next month
+        try {
+          const newPayments = generatePaymentSchedule(fixedContract, nextMonthStart);
+          console.log(`Generated ${newPayments.length} new payments`);
+
+          for (const payment of newPayments) {
+            await storage.createPayment(payment);
+          }
+
+          console.log('All new payments created successfully');
+        } catch (scheduleError: any) {
+          console.error('Error regenerating payment schedule:', scheduleError);
+          // Don't fail the contract update, but log the error
+        }
+      }
+
+      res.json(fixedContract);
     } catch (error: any) {
       console.error('Contract update error:', error);
       console.error('Error stack:', error.stack);
@@ -760,7 +803,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 }
 
 // Helper function to generate payment schedule
-function generatePaymentSchedule(contract: any) {
+// Optional startFromDate parameter allows regenerating payments from a specific date (e.g., 1st of next month)
+function generatePaymentSchedule(contract: any, startFromDate?: Date) {
   console.log('=== generatePaymentSchedule called ===');
   console.log('Contract input:', {
     id: contract.id,
@@ -769,20 +813,27 @@ function generatePaymentSchedule(contract: any) {
     rentAmount: contract.rentAmount,
     paymentFrequency: contract.paymentFrequency
   });
+  if (startFromDate) {
+    console.log('Custom start date provided:', startFromDate.toISOString());
+  }
 
   const payments = [];
-  const startDate = new Date(contract.startDate);
+  const contractStartDate = new Date(contract.startDate);
   const endDate = new Date(contract.endDate);
   const rentAmount = contract.rentAmount;
 
+  // Use custom start date if provided, otherwise use contract start date
+  const effectiveStartDate = startFromDate || contractStartDate;
+
   console.log('Parsed dates:', {
-    startDate: startDate.toISOString(),
+    contractStartDate: contractStartDate.toISOString(),
+    effectiveStartDate: effectiveStartDate.toISOString(),
     endDate: endDate.toISOString(),
-    startDateValid: !isNaN(startDate.getTime()),
+    startDateValid: !isNaN(effectiveStartDate.getTime()),
     endDateValid: !isNaN(endDate.getTime())
   });
 
-  let currentDate = new Date(startDate);
+  let currentDate = new Date(effectiveStartDate);
 
   // Determine payment interval based on frequency
   const getNextDate = (date: Date, frequency: string) => {
@@ -805,7 +856,7 @@ function generatePaymentSchedule(contract: any) {
   };
 
   // First pass: count how many payments will be generated
-  let tempDate = new Date(startDate);
+  let tempDate = new Date(effectiveStartDate);
   let paymentCount = 0;
   const maxCountIterations = 1000;
 
