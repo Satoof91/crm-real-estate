@@ -166,9 +166,35 @@ router.post('/api/notifications/announcement', isAuthenticated, async (req: Requ
 // Get notification history
 router.get('/api/notifications/history', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    // For now, return empty array since we don't have a notifications table
-    res.json([]);
+    const { db } = await import('../db');
+    const { notifications } = await import('@shared/notifications-schema');
+    const { desc, eq } = await import('drizzle-orm');
+
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const offset = (page - 1) * limit;
+    const status = req.query.status as string;
+
+    let query = db.select().from(notifications).orderBy(desc(notifications.createdAt));
+
+    if (status) {
+      query = query.where(eq(notifications.status, status as any)) as any;
+    }
+
+    const allNotifications = await query.limit(limit).offset(offset) as any;
+    const total = allNotifications.length; // Simplified for now
+
+    res.json({
+      data: allNotifications,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error: any) {
+    console.error('Get notification history error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -194,6 +220,49 @@ router.get('/api/notifications', isAuthenticated, async (req: Request, res: Resp
     // Return empty array for now
     res.json([]);
   } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Manually trigger payment reminders (admin only)
+router.post('/api/notifications/trigger-reminders', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const { notificationService } = await import('./services/notification.service');
+
+    console.log('Manually triggering payment reminders...');
+    await notificationService.sendPaymentReminders();
+
+    res.json({
+      success: true,
+      message: 'Payment reminders job triggered successfully',
+      triggeredAt: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('Trigger reminders error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get notification stats for admin dashboard
+router.get('/api/notifications/stats', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const { db } = await import('../db');
+    const { notifications, NotificationStatus } = await import('@shared/notifications-schema');
+    const { eq, count } = await import('drizzle-orm');
+
+    const [pending] = await db.select({ count: count() }).from(notifications).where(eq(notifications.status, NotificationStatus.PENDING));
+    const [sent] = await db.select({ count: count() }).from(notifications).where(eq(notifications.status, NotificationStatus.SENT));
+    const [failed] = await db.select({ count: count() }).from(notifications).where(eq(notifications.status, NotificationStatus.FAILED));
+    const [total] = await db.select({ count: count() }).from(notifications);
+
+    res.json({
+      pending: pending?.count || 0,
+      sent: sent?.count || 0,
+      failed: failed?.count || 0,
+      total: total?.count || 0
+    });
+  } catch (error: any) {
+    console.error('Get notification stats error:', error);
     res.status(500).json({ error: error.message });
   }
 });

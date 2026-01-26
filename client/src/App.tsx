@@ -26,6 +26,7 @@ import Contracts from "@/pages/Contracts";
 import Payments from "@/pages/Payments";
 import Users from "@/pages/Users";
 import Calendar from "@/pages/Calendar";
+import NotificationMonitor from "@/pages/NotificationMonitor";
 
 // Define nav items for different roles
 const managerNavItems = [
@@ -35,6 +36,7 @@ const managerNavItems = [
   { path: "/contracts", labelKey: "nav.contracts", icon: FileText },
   { path: "/payments", labelKey: "nav.payments", icon: DollarSign },
   { path: "/calendar", labelKey: "nav.calendar", icon: CalendarIcon },
+  { path: "/notification-monitor", labelKey: "nav.notificationMonitor", icon: Bell },
 ];
 
 const adminNavItems = [
@@ -108,6 +110,9 @@ function Router() {
       </Route>
       <Route path="/calendar">
         {() => <ProtectedRoute component={Calendar} />}
+      </Route>
+      <Route path="/notification-monitor">
+        {() => <ProtectedRoute component={NotificationMonitor} />}
       </Route>
       <Route component={NotFound} />
     </Switch>
