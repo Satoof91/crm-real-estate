@@ -9,7 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, MoreHorizontal, RefreshCw, Trash2 } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
+import { differenceInDays } from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
+import { useSettings } from "@/contexts/SettingsContext";
+import { formatDisplayDate } from "@/lib/dateFormatter";
 
 interface Contract {
   id: string;
@@ -37,7 +39,8 @@ interface ContractsTableProps {
 }
 
 export function ContractsTable({ contracts, onView, onEdit, onRenew, onDelete }: ContractsTableProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { calendarType } = useSettings();
 
   const getContractStatus = (startDate: Date, endDate: Date) => {
     const today = new Date();
@@ -85,8 +88,8 @@ export function ContractsTable({ contracts, onView, onEdit, onRenew, onDelete }:
               <TableRow key={contract.id} className="hover-elevate hover:bg-muted/30 transition-all duration-150" data-testid={`row-contract-${contract.id}`}>
                 <TableCell className="font-semibold text-primary" data-testid={`text-unit-${contract.id}`}>{contract.unitNumber}</TableCell>
                 <TableCell className="font-medium">{contract.tenantName}</TableCell>
-                <TableCell className="text-muted-foreground">{format(contract.startDate, 'MMM dd, yyyy')}</TableCell>
-                <TableCell className="text-muted-foreground" data-testid={`text-end-date-${contract.id}`}>{format(contract.endDate, 'MMM dd, yyyy')}</TableCell>
+                <TableCell className="text-muted-foreground">{formatDisplayDate(contract.startDate, calendarType, i18n.language)}</TableCell>
+                <TableCell className="text-muted-foreground" data-testid={`text-end-date-${contract.id}`}>{formatDisplayDate(contract.endDate, calendarType, i18n.language)}</TableCell>
                 <TableCell className="font-bold text-green-600 dark:text-green-400">${contract.rentAmount}</TableCell>
                 <TableCell>
                   <Badge variant="secondary" className="badge-animate">{contract.paymentFrequency}</Badge>

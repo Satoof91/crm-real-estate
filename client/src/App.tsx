@@ -8,6 +8,8 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { SettingsProvider } from "@/contexts/SettingsContext";
+import { CalendarToggle } from "@/components/CalendarToggle";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -189,8 +191,9 @@ function AppContent() {
         </div>
 
         <div className="shrink-0 p-6 border-t border-white/10 bg-white/30 backdrop-blur-md space-y-6">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-center gap-2">
             <ThemeToggle />
+            <CalendarToggle />
             <LanguageSwitcher />
           </div>
 
@@ -277,8 +280,9 @@ function AppContent() {
               </div>
 
               <div className="shrink-0 p-6 border-t border-white/10 bg-white/30 backdrop-blur-md space-y-6">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-center gap-2">
                   <ThemeToggle />
+                  <CalendarToggle />
                   <LanguageSwitcher />
                 </div>
 
@@ -325,10 +329,12 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <TooltipProvider>
-          <AuthProvider>
-            <AppContent />
-            <Toaster />
-          </AuthProvider>
+          <SettingsProvider>
+            <AuthProvider>
+              <AppContent />
+              <Toaster />
+            </AuthProvider>
+          </SettingsProvider>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>

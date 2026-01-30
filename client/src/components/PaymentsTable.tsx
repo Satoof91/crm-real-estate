@@ -9,8 +9,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Clock, Undo2, Trash2 } from "lucide-react";
-import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
+import { useSettings } from "@/contexts/SettingsContext";
+import { formatDisplayDate } from "@/lib/dateFormatter";
 
 interface Payment {
   id: string;
@@ -30,7 +31,8 @@ interface PaymentsTableProps {
 }
 
 export function PaymentsTable({ payments, onMarkPaid, onMarkUnpaid, onDelete }: PaymentsTableProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { calendarType } = useSettings();
 
   const statusConfig = {
     pending: { label: t('payments.status.pending'), variant: 'outline' as const, icon: Clock },
@@ -61,7 +63,7 @@ export function PaymentsTable({ payments, onMarkPaid, onMarkUnpaid, onDelete }: 
                 <TableCell className="font-medium" data-testid={`text-unit-${payment.id}`}>{payment.unitNumber}</TableCell>
                 <TableCell>{payment.tenantName}</TableCell>
                 <TableCell className="font-medium" data-testid={`text-amount-${payment.id}`}>${payment.amount}</TableCell>
-                <TableCell data-testid={`text-due-date-${payment.id}`}>{format(payment.dueDate, 'MMM dd, yyyy')}</TableCell>
+                <TableCell data-testid={`text-due-date-${payment.id}`}>{formatDisplayDate(payment.dueDate, calendarType, i18n.language)}</TableCell>
                 <TableCell>
                   <Badge variant={config.variant} className="gap-1" data-testid={`badge-status-${payment.id}`}>
                     <Icon className="h-3 w-3" />
@@ -69,7 +71,7 @@ export function PaymentsTable({ payments, onMarkPaid, onMarkUnpaid, onDelete }: 
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {payment.paidDate ? format(payment.paidDate, 'MMM dd, yyyy') : '-'}
+                  {payment.paidDate ? formatDisplayDate(payment.paidDate, calendarType, i18n.language) : '-'}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">

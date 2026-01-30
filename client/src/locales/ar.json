@@ -39,6 +39,12 @@
     "all": "الكل",
     "expired": "منتهي"
   },
+  "settings": {
+    "title": "إعدادات العرض",
+    "calendarType": "نوع التقويم",
+    "gregorian": "ميلادي",
+    "hijri": "هجري (إسلامي)"
+  },
   "auth": {
     "login": "تسجيل الدخول",
     "register": "إنشاء حساب",

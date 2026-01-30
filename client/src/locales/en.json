@@ -39,6 +39,12 @@
     "all": "All",
     "expired": "Expired"
   },
+  "settings": {
+    "title": "Display Settings",
+    "calendarType": "Calendar Type",
+    "gregorian": "Gregorian",
+    "hijri": "Hijri (Islamic)"
+  },
   "auth": {
     "login": "Login",
     "register": "Register",
