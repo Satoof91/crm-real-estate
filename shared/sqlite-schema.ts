@@ -74,6 +74,64 @@ export const payments = sqliteTable("payments", {
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// Notification Types
+export const NotificationType = {
+  PAYMENT_REMINDER: 'payment_reminder',
+  PAYMENT_RECEIVED: 'payment_received',
+  PAYMENT_OVERDUE: 'payment_overdue',
+  MONTHLY_UNPAID_SUMMARY: 'monthly_unpaid_summary',
+  CONTRACT_EXPIRING: 'contract_expiring',
+  CONTRACT_EXPIRED: 'contract_expired',
+  CONTRACT_RENEWED: 'contract_renewed',
+  MAINTENANCE_SCHEDULED: 'maintenance_scheduled',
+  MAINTENANCE_COMPLETED: 'maintenance_completed',
+  ANNOUNCEMENT: 'announcement',
+  WELCOME: 'welcome',
+} as const;
+
+export const NotificationStatus = {
+  PENDING: 'pending',
+  SENT: 'sent',
+  DELIVERED: 'delivered',
+  READ: 'read',
+  FAILED: 'failed',
+} as const;
+
+export const NotificationChannel = {
+  WHATSAPP: 'whatsapp',
+  EMAIL: 'email',
+  SMS: 'sms',
+  IN_APP: 'in_app',
+} as const;
+
+// Notifications table for SQLite
+export const notifications = sqliteTable("notifications", {
+  id: text("id").primaryKey().$defaultFn(() => generateId()),
+  type: text("type").notNull(),
+  channel: text("channel").notNull(),
+  status: text("status").notNull().default('pending'),
+  recipientId: text("recipient_id").notNull(),
+  recipientPhone: text("recipient_phone"),
+  recipientEmail: text("recipient_email"),
+  recipientName: text("recipient_name"),
+  subject: text("subject"),
+  message: text("message").notNull(),
+  templateId: text("template_id"),
+  templateData: text("template_data"),
+  metadata: text("metadata"),
+  scheduledFor: text("scheduled_for"),
+  sentAt: text("sent_at"),
+  deliveredAt: text("delivered_at"),
+  readAt: text("read_at"),
+  failedAt: text("failed_at"),
+  failureReason: text("failure_reason"),
+  retryCount: integer("retry_count").default(0),
+  whatsappMessageId: text("whatsapp_message_id"),
+  whatsappStatus: text("whatsapp_status"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 // Schema types - keep the same as PostgreSQL for compatibility
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 

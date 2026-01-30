@@ -311,6 +311,46 @@ Best regards,
 {{companyName}}`,
     },
   },
+
+  // Monthly Unpaid Payment Summary
+  monthly_unpaid_summary: {
+    en: {
+      subject: 'Monthly Payment Reminder - Outstanding Balance',
+      body: `Dear {{tenantName}},
+
+This is a reminder that you have outstanding payments for unit {{unitNumber}}.
+
+📋 *Outstanding Payments:*
+{{paymentsList}}
+
+💰 *Total Amount Due: {{totalAmount}}*
+
+Please settle your outstanding balance at your earliest convenience.
+
+For any queries, please contact us.
+
+Best regards,
+{{companyName}}`,
+    },
+    ar: {
+      subject: 'تذكير شهري بالمدفوعات - رصيد مستحق',
+      body: `عزيزي/عزيزتي {{tenantName}}،
+
+هذا تذكير بأن لديك مدفوعات مستحقة للوحدة {{unitNumber}}.
+
+📋 *الدفعات المستحقة:*
+{{paymentsList}}
+
+💰 *إجمالي المبلغ المستحق: {{totalAmount}}*
+
+يرجى تسديد رصيدك المستحق في أقرب وقت ممكن.
+
+لأي استفسارات، يرجى الاتصال بنا.
+
+مع أطيب التحيات،
+{{companyName}}`,
+    },
+  },
 };
 
 /**

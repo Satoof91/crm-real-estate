@@ -1,13 +1,12 @@
 import { db } from '../../db';
 import {
   notifications,
-  notificationTemplates,
-  notificationPreferences,
-  type NewNotification,
   NotificationStatus,
   NotificationChannel,
   NotificationType
-} from '@shared/notifications-schema';
+} from '@shared/sqlite-schema';
+// For Postgres-only features (templates/preferences), import conditionally or skip
+// import { notificationTemplates, notificationPreferences } from '@shared/notifications-schema';
 import { whatsAppService } from './whatsapp.service';
 import { getTemplate, renderTemplate, type TemplateVariable } from './notification-templates';
 import { eq, and, lt, gte } from 'drizzle-orm';
@@ -257,6 +256,20 @@ class NotificationService {
     cron.schedule('0 10 * * *', async () => {
       await this.checkExpiringContracts();
     });
+
+    // Send monthly unpaid payment summary on the last day of each month at 9 AM
+    // Using 28-31 covers all months; we check if it's actually the last day
+    cron.schedule('0 9 28-31 * *', async () => {
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      // Only run if tomorrow is a new month (meaning today is the last day)
+      if (tomorrow.getMonth() !== today.getMonth()) {
+        console.log('📅 End of month - sending unpaid payment summaries...');
+        await this.sendMonthlyUnpaidSummary();
+      }
+    });
   }
 
   /**
@@ -437,6 +450,142 @@ class NotificationService {
     // This would be implemented based on your contract logic
     console.log('Checking expiring contracts...');
     // TODO: Query contracts expiring in next 30 days and send notifications
+  }
+
+  /**
+   * Send monthly unpaid payment summary to customers with pending/overdue payments
+   * Runs on the last day of each month
+   * @param targetName Optional name to filter by (for testing)
+   */
+  async sendMonthlyUnpaidSummary(targetName?: string) {
+    console.log('Starting monthly unpaid payment summary job...');
+
+    try {
+      // Import storage here to avoid circular dependency
+      const { storage } = await import('../storage');
+
+      // Get all users
+      const users = await storage.getUsers();
+      console.log(`[Monthly Job] Found ${users.length} users to process.`);
+
+      for (const user of users) {
+        // Get all payments for this user
+        const payments = await storage.getPayments(user.id);
+
+        // Calculate the start of the current month
+        const today = new Date();
+        const startOfCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+        // Filter for ONLY overdue payments that were due BEFORE the current month
+        // This excludes payments that just became due/overdue in the current month
+        const overduePayments = payments.filter(p => {
+          // Include if status is 'overdue' OR if 'pending' but due date is passed
+          const isUnpaid = p.status === 'overdue' || p.status === 'pending';
+          if (!isUnpaid) return false;
+
+          const dueDate = new Date(p.dueDate);
+          return dueDate < startOfCurrentMonth;
+        });
+
+        if (overduePayments.length > 0) {
+          console.log(`[Monthly Job] User ${user.fullName} has ${overduePayments.length} overdue payments.`);
+        }
+
+        if (overduePayments.length === 0) continue;
+
+        // Group overdue payments by contract
+        const paymentsByContract: Record<string, typeof overduePayments> = {};
+        for (const payment of overduePayments) {
+          if (!paymentsByContract[payment.contractId]) {
+            paymentsByContract[payment.contractId] = [];
+          }
+          paymentsByContract[payment.contractId].push(payment);
+        }
+
+        // Send notification for each contract with overdue payments
+        for (const [contractId, contractPayments] of Object.entries(paymentsByContract)) {
+          const contract = await storage.getContract(contractId);
+          if (!contract) continue;
+
+          const unit = await storage.getUnit(contract.unitId);
+          const contact = await storage.getContact(contract.contactId);
+
+          if (!contact || !contact.phone) continue;
+
+          // Filter by name if provided (for testing)
+          if (targetName && !contact.fullName.toLowerCase().includes(targetName.toLowerCase())) {
+            continue;
+          }
+
+          // Calculate total and find oldest due date
+          const totalAmount = contractPayments.reduce(
+            (sum, p) => sum + parseFloat(p.amount || '0'),
+            0
+          );
+
+          // Build payments list - only overdue from previous months
+          const paymentsList = contractPayments
+            .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+            .map((p, index) => {
+              const dueDate = new Date(p.dueDate).toLocaleDateString('ar-SA');
+              const amount = parseFloat(p.amount || '0').toLocaleString('ar-SA');
+              return `${index + 1}. ${dueDate} - ${amount} ريال`;
+            })
+            .join('\n');
+
+          console.log(`📱 Sending monthly unpaid summary to ${contact.fullName} for unit ${unit?.unitNumber}`);
+
+          // Send via WhatsApp using the template
+          const template = getTemplate('monthly_unpaid_summary', 'ar');
+          if (template) {
+            const message = renderTemplate(template.body, {
+              tenantName: contact.fullName,
+              unitNumber: unit?.unitNumber || 'N/A',
+              totalAmount: totalAmount.toLocaleString('ar-SA') + ' ريال',
+              paymentsList: paymentsList,
+              companyName: 'Real Estate CRM'
+            });
+
+            const result = await whatsAppService.sendMessage({
+              to: contact.phone,
+              message: message
+            });
+
+            const status = result.success ? NotificationStatus.SENT : NotificationStatus.FAILED;
+
+            // Save notification to database
+            await (db as any).insert(notifications).values({
+              type: NotificationType.MONTHLY_UNPAID_SUMMARY,
+              channel: NotificationChannel.WHATSAPP,
+              status: status,
+              recipientId: contact.id,
+              recipientPhone: contact.phone,
+              recipientName: contact.fullName,
+              message: message,
+              sentAt: result.success ? new Date().toISOString() : undefined,
+              whatsappMessageId: result.messageId,
+              failureReason: result.error,
+              metadata: JSON.stringify({
+                unitId: unit?.id,
+                unitNumber: unit?.unitNumber,
+                totalAmount: totalAmount,
+                count: overduePayments.length
+              })
+            });
+
+            if (result.success) {
+              console.log(`✅ Monthly summary sent to ${contact.fullName}`);
+            } else {
+              console.error(`❌ Failed to send to ${contact.fullName}:`, result.error);
+            }
+          }
+        }
+      }
+
+      console.log('Monthly unpaid payment summary job completed');
+    } catch (error) {
+      console.error('Error in sendMonthlyUnpaidSummary:', error);
+    }
   }
 
   /**

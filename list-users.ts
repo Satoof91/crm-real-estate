@@ -1,19 +1,25 @@
-import "dotenv/config";
-import { storage } from "./server/storage";
 
-async function listUsers() {
-    console.log("Fetching users...");
+import { db } from './server/db';
+import { users } from './shared/sqlite-schema'; // Adjust if needed
+import { users as pgUsers } from './shared/schema'; // Try this one too if sqlite one fails or vice versa. Usually schema.ts has it.
+import * as schema from './shared/schema';
+
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import ws from 'ws';
+import dotenv from 'dotenv';
+dotenv.config();
+neonConfig.webSocketConstructor = ws;
+
+async function getUsers() {
     try {
-        const users = await storage.getUsers();
-        console.log(`Found ${users.length} users.`);
-        for (const user of users) {
-            console.log(`Username: ${user.username}, Role: ${user.role}, Email: ${user.email}`);
-        }
-        process.exit(0);
+        // We'll use the pool directly to avoid import issues with db.ts if any
+        const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+        const result = await pool.query('SELECT username, role, password FROM users LIMIT 5');
+        console.log('Users found:', result.rows);
+        await pool.end();
     } catch (error) {
-        console.error("Error:", error);
-        process.exit(1);
+        console.error('Error:', error);
     }
 }
 
-listUsers();
+getUsers();

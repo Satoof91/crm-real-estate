@@ -3,6 +3,10 @@ import { whatsAppService } from './services/whatsapp.service';
 import { arabicTemplates, getArabicTemplate } from './services/arabic-templates';
 import { notificationTemplates, getTemplate, renderTemplate } from './services/notification-templates';
 import { isAuthenticated } from './middleware';
+import { db } from './db';
+import { notifications } from '@shared/notifications-schema';
+import { contacts } from '@shared/schema';
+import { eq, desc } from 'drizzle-orm';
 
 const router = Router();
 
@@ -217,9 +221,35 @@ router.get('/api/notifications/preferences', isAuthenticated, async (req: Reques
 // Get notifications (for UI)
 router.get('/api/notifications', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    // Return empty array for now
-    res.json([]);
+    const userId = (req.user as any).id;
+
+    // Get notifications for contacts belonging to this user
+    const result = await (db as any)
+      .select({
+        id: notifications.id,
+        type: notifications.type,
+        channel: notifications.channel,
+        status: notifications.status,
+        recipientId: notifications.recipientId,
+        recipientPhone: notifications.recipientPhone,
+        recipientName: notifications.recipientName,
+        subject: notifications.subject,
+        message: notifications.message,
+        sentAt: notifications.sentAt,
+        createdAt: notifications.createdAt,
+        failureReason: notifications.failureReason,
+        metadata: notifications.metadata
+      })
+      .from(notifications)
+      // Join with contacts to filter by the current logged-in user
+      .innerJoin(contacts, eq(notifications.recipientId, contacts.id))
+      .where(eq(contacts.userId, userId))
+      .orderBy(desc(notifications.createdAt))
+      .limit(100);
+
+    res.json(result);
   } catch (error: any) {
+    console.error('Error fetching notifications:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -239,6 +269,30 @@ router.post('/api/notifications/trigger-reminders', isAuthenticated, async (req:
     });
   } catch (error: any) {
     console.error('Trigger reminders error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Manually trigger monthly unpaid payment summary (admin only)
+router.post('/api/notifications/trigger-monthly-summary', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const { notificationService } = await import('./services/notification.service');
+    const { targetName } = req.body;
+
+    console.log(`Manually triggering monthly unpaid summary${targetName ? ` for ${targetName}` : ''}...`);
+
+    // Run in background
+    notificationService.sendMonthlyUnpaidSummary(targetName).catch(err =>
+      console.error('Error in background monthly summary job:', err)
+    );
+
+    res.json({
+      success: true,
+      message: `Monthly unpaid summary job triggered successfully${targetName ? ` for ${targetName}` : ''}`,
+      triggeredAt: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('Trigger monthly summary error:', error);
     res.status(500).json({ error: error.message });
   }
 });

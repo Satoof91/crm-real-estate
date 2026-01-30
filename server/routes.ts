@@ -602,11 +602,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/payments/:id", isAuthenticated, async (req, res) => {
     try {
+      // Get existing payment to check for status change
+      const existingPayment = await storage.getPayment(req.params.id);
+      if (!existingPayment) {
+        return res.status(404).json({ error: "Payment not found" });
+      }
+
       const validatedData = updatePaymentSchema.parse(req.body);
       const payment = await storage.updatePayment(req.params.id, validatedData);
       if (!payment) {
         return res.status(404).json({ error: "Payment not found" });
       }
+
+      // Send notification if status changed to 'paid'
+      if (existingPayment.status !== 'paid' && validatedData.status === 'paid') {
+        try {
+          // Import services dynamically to avoid circular dependencies
+          const { whatsAppService } = await import('./services/whatsapp.service');
+          const { getTemplate, renderTemplate } = await import('./services/notification-templates');
+
+          // Fetch related data
+          const contract = await storage.getContract(payment.contractId);
+          if (contract) {
+            const unit = await storage.getUnit(contract.unitId);
+            const contact = await storage.getContact(contract.contactId);
+
+            if (contact && contact.phone) {
+              // Get Arabic template for payment confirmation
+              const template = getTemplate('payment_received', 'ar');
+              if (template) {
+                const message = renderTemplate(template.body, {
+                  tenantName: contact.fullName,
+                  amount: payment.amount,
+                  paymentDate: new Date().toLocaleDateString('ar-SA'),
+                  unitNumber: unit?.unitNumber || 'N/A',
+                  referenceNumber: payment.id.substring(0, 8).toUpperCase(),
+                  companyName: 'Real Estate CRM'
+                });
+
+                console.log('📱 Sending payment confirmation notification...');
+                const result = await whatsAppService.sendMessage({
+                  to: contact.phone,
+                  message: message
+                });
+
+                if (result.success) {
+                  console.log('✅ Payment confirmation sent to', contact.phone);
+                } else {
+                  console.error('❌ Failed to send payment confirmation:', result.error);
+                }
+              }
+            }
+          }
+        } catch (notificationError) {
+          // Don't fail the payment update if notification fails
+          console.error('Notification error (non-blocking):', notificationError);
+        }
+      }
+
       res.json(payment);
     } catch (error: any) {
       res.status(400).json({ error: error.message });

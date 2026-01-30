@@ -42,6 +42,11 @@ const notificationTemplates = {
     ar: 'تذكير بالدفع',
     icon: '💰'
   },
+  monthly_unpaid_summary: {
+    en: 'Monthly Unpaid Summary',
+    ar: 'ملخص المدفوعات المستحقة',
+    icon: '📊'
+  },
   contract_expiring: {
     en: 'Contract Expiring',
     ar: 'انتهاء العقد',
@@ -83,6 +88,23 @@ const quickTemplates = {
 يرجى السداد في الموعد المحدد.
 
 شكراً لكم`,
+
+    monthly_unpaid_summary: `ملخص المدفوعات المستحقة
+
+عزيزي/عزيزتي {{name}}،
+
+هذا تذكير بأن لديك مدفوعات مستحقة للوحدة {{unit}}.
+
+📋 الدفعات المستحقة:
+{{paymentsList}}
+
+💰 إجمالي المبلغ المستحق: {{amount}} ريال
+
+يرجى تسديد رصيدك المستحق في أقرب وقت ممكن.
+
+لأي استفسارات، يرجى الاتصال بنا.
+
+مع أطيب التحيات`,
 
     contract_expiring: `تنبيه: اقتراب انتهاء العقد
 
@@ -133,6 +155,23 @@ Amount due: {{amount}} SAR
 Please ensure timely payment.
 
 Thank you`,
+
+    monthly_unpaid_summary: `Outstanding Payments Summary
+
+Dear {{name}},
+
+This is a reminder that you have outstanding payments for unit {{unit}}.
+
+📋 Outstanding Payments:
+{{paymentsList}}
+
+💰 Total Amount Due: {{amount}} SAR
+
+Please settle your outstanding balance at your earliest convenience.
+
+For any queries, please contact us.
+
+Best regards`,
 
     contract_expiring: `Contract Expiry Notice
 
@@ -206,7 +245,7 @@ export function SendNotificationDialog({
     if (useTemplate && notificationType !== 'custom') {
       // If a contact is already selected, re-populate with their data
       if (selectedContact) {
-        handleContactSelect(selectedContact);
+        handleContactSelect(selectedContact, notificationType);
       } else if (defaultRecipient) {
         // Use default recipient if provided
         const template = quickTemplates[language as 'ar' | 'en'][notificationType as keyof typeof quickTemplates['ar']];
@@ -239,7 +278,9 @@ export function SendNotificationDialog({
     }
   };
 
-  const handleContactSelect = async (contactId: string) => {
+  const handleContactSelect = async (contactId: string, currentNotificationType?: string) => {
+    // Use passed notificationType or fall back to state (for direct dropdown selection)
+    const effectiveNotificationType = currentNotificationType || notificationType;
     const contact = contacts.find(c => c.id === contactId);
     if (contact) {
       setRecipientPhone(contact.phone || '');
@@ -294,14 +335,47 @@ export function SendNotificationDialog({
           }
 
           // Update template message with actual values using selected message language
-          if (useTemplate && notificationType !== 'custom') {
-            const template = quickTemplates[messageLanguage][notificationType as keyof typeof quickTemplates['ar']];
+          if (useTemplate && effectiveNotificationType !== 'custom') {
+            const template = quickTemplates[messageLanguage][effectiveNotificationType as keyof typeof quickTemplates['ar']];
             if (template) {
               let msg = template;
               msg = msg.replace(/{{name}}/g, contact.fullName || '');
               msg = msg.replace(/{{unit}}/g, unitNumber);
               msg = msg.replace(/{{building}}/g, buildingName);
-              msg = msg.replace(/{{amount}}/g, paymentAmount);
+
+              // Special handling for monthly_unpaid_summary - build payments list (only overdue)
+              if (effectiveNotificationType === 'monthly_unpaid_summary') {
+                // Filter by active contract to ensure we only get this tenant's payments
+                let targetPayments = paymentsData.data || [];
+                if (activeContract) {
+                  targetPayments = targetPayments.filter((p: any) => p.contractId === activeContract.id);
+                }
+
+                // Get overdue payments (status is 'overdue' OR 'pending' with past due date)
+                const overduePayments = targetPayments.filter((p: any) => {
+                  const isDynamicOverdue = p.status === 'pending' && new Date(p.dueDate) < new Date();
+                  return p.status === 'overdue' || isDynamicOverdue;
+                });
+
+                // Build payments list (only overdue)
+                const paymentsList = overduePayments
+                  .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+                  .map((p: any, index: number) => {
+                    const dueDate = new Date(p.dueDate).toLocaleDateString(messageLanguage === 'ar' ? 'ar-SA' : 'en-US');
+                    const amount = parseFloat(p.amount).toLocaleString();
+                    return `${index + 1}. ${dueDate} - ${amount} ${messageLanguage === 'ar' ? 'ريال' : 'SAR'}`;
+                  })
+                  .join('\n');
+
+                // Calculate total
+                const totalAmount = overduePayments.reduce((sum: number, p: any) => sum + parseFloat(p.amount || '0'), 0);
+
+                msg = msg.replace(/{{paymentsList}}/g, paymentsList || 'No overdue payments');
+                msg = msg.replace(/{{amount}}/g, totalAmount.toLocaleString());
+              } else {
+                msg = msg.replace(/{{amount}}/g, paymentAmount);
+              }
+
               msg = msg.replace(/{{paymentDay}}/g, paymentDay);
               msg = msg.replace(/{{date}}/g, new Date().toLocaleDateString(messageLanguage === 'ar' ? 'ar-SA' : 'en-US'));
               msg = msg.replace(/{{emergency}}/g, '920000000'); // Placeholder emergency number
@@ -312,8 +386,8 @@ export function SendNotificationDialog({
       } catch (error) {
         console.error('Error fetching contract data:', error);
         // Still update with basic info if contract fetch fails
-        if (useTemplate && notificationType !== 'custom') {
-          const template = quickTemplates[language as 'ar' | 'en'][notificationType as keyof typeof quickTemplates['ar']];
+        if (useTemplate && effectiveNotificationType !== 'custom') {
+          const template = quickTemplates[language as 'ar' | 'en'][effectiveNotificationType as keyof typeof quickTemplates['ar']];
           if (template) {
             let msg = template;
             msg = msg.replace(/{{name}}/g, contact.fullName || '');

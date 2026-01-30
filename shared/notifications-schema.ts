@@ -8,6 +8,7 @@ export const NotificationType = {
   PAYMENT_REMINDER: 'payment_reminder',
   PAYMENT_RECEIVED: 'payment_received',
   PAYMENT_OVERDUE: 'payment_overdue',
+  MONTHLY_UNPAID_SUMMARY: 'monthly_unpaid_summary',
   CONTRACT_EXPIRING: 'contract_expiring',
   CONTRACT_EXPIRED: 'contract_expired',
   CONTRACT_RENEWED: 'contract_renewed',
