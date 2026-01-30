@@ -22,7 +22,7 @@ import {
   type Payment,
   type InsertPayment,
 } from "@shared/sqlite-schema";
-import { eq, and, gte, lte, desc, asc, or, count } from "drizzle-orm";
+import { eq, and, gte, lte, desc, asc, or, count, ne } from "drizzle-orm";
 
 export interface IStorage {
   // Users
