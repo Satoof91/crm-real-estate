@@ -8,6 +8,7 @@ import {
   units,
   contracts,
   payments,
+  systemSettings,
   type User,
   type InsertUser,
   type Contact,
@@ -80,6 +81,11 @@ export interface IStorage {
     unit: Unit;
   }[]>;
   getOverduePayments(userId: string): Promise<Payment[]>;
+
+  // System Settings
+  getSystemSettings(): Promise<Record<string, string>>;
+  getSystemSetting(key: string): Promise<string | undefined>;
+  setSystemSetting(key: string, value: string): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
@@ -452,6 +458,32 @@ export class DbStorage implements IStorage {
       .orderBy(payments.dueDate);
 
     return result;
+  }
+
+  // System Settings
+  async getSystemSettings(): Promise<Record<string, string>> {
+    const result = await db.select().from(systemSettings);
+    const settings: Record<string, string> = {};
+    for (const row of result) {
+      settings[row.key] = row.value;
+    }
+    return settings;
+  }
+
+  async getSystemSetting(key: string): Promise<string | undefined> {
+    const result = await db.select().from(systemSettings).where(eq(systemSettings.key, key));
+    return result[0]?.value;
+  }
+
+  async setSystemSetting(key: string, value: string): Promise<void> {
+    const existing = await db.select().from(systemSettings).where(eq(systemSettings.key, key));
+    if (existing.length > 0) {
+      await db.update(systemSettings)
+        .set({ value, updatedAt: new Date().toISOString() })
+        .where(eq(systemSettings.key, key));
+    } else {
+      await db.insert(systemSettings).values({ key, value });
+    }
   }
 }
 

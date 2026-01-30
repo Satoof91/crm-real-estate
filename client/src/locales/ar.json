@@ -40,10 +40,28 @@
     "expired": "منتهي"
   },
   "settings": {
-    "title": "إعدادات العرض",
+    "title": "الإعدادات",
+    "subtitle": "إدارة تفضيلات التطبيق",
+    "appearanceSettings": "المظهر",
+    "appearanceSettingsDescription": "تخصيص شكل ومظهر التطبيق",
+    "theme": "السمة",
+    "themeDescription": "التبديل بين الوضع الفاتح والداكن",
+    "language": "اللغة",
+    "languageDescription": "اختر لغتك المفضلة",
+    "displaySettings": "إعدادات العرض",
+    "displaySettingsDescription": "تخصيص طريقة عرض المعلومات",
     "calendarType": "نوع التقويم",
+    "calendarTypeDescription": "اختر بين التقويم الميلادي أو الهجري للتواريخ",
     "gregorian": "ميلادي",
-    "hijri": "هجري (إسلامي)"
+    "hijri": "هجري",
+    "notificationSettings": "إعدادات الإشعارات",
+    "notificationSettingsDescription": "التحكم في إشعارات واتساب التلقائية",
+    "autoPaymentNotifications": "تذكيرات الدفع التلقائية",
+    "autoPaymentNotificationsDescription": "إرسال تذكيرات واتساب قبل تاريخ استحقاق الدفع",
+    "autoMonthlySummary": "ملخص المستحقات الشهري",
+    "autoMonthlySummaryDescription": "إرسال ملخص شهري للمدفوعات غير المسددة في نهاية الشهر",
+    "saved": "تم حفظ الإعداد بنجاح",
+    "saveFailed": "فشل في حفظ الإعداد"
   },
   "auth": {
     "login": "تسجيل الدخول",

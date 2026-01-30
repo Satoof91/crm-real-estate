@@ -14,7 +14,7 @@ import NotFound from "@/pages/not-found";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import AdminDashboard from "@/pages/AdminDashboard";
-import { Building2, Users as UsersIcon, FileText, DollarSign, LayoutDashboard, LogOut, Shield, Bell, MessageSquare, Calendar as CalendarIcon, Menu } from "lucide-react";
+import { Building2, Users as UsersIcon, FileText, DollarSign, LayoutDashboard, LogOut, Shield, Bell, MessageSquare, Calendar as CalendarIcon, Menu, Settings as SettingsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -29,6 +29,7 @@ import Payments from "@/pages/Payments";
 import Users from "@/pages/Users";
 import Calendar from "@/pages/Calendar";
 import NotificationMonitor from "@/pages/NotificationMonitor";
+import Settings from "@/pages/Settings";
 
 // Define nav items for different roles
 const managerNavItems = [
@@ -116,6 +117,9 @@ function Router() {
       <Route path="/notification-monitor">
         {() => <ProtectedRoute component={NotificationMonitor} />}
       </Route>
+      <Route path="/settings">
+        {() => <ProtectedRoute component={Settings} />}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -191,11 +195,18 @@ function AppContent() {
         </div>
 
         <div className="shrink-0 p-6 border-t border-white/10 bg-white/30 backdrop-blur-md space-y-6">
-          <div className="flex items-center justify-center gap-2">
-            <ThemeToggle />
-            <CalendarToggle />
-            <LanguageSwitcher />
-          </div>
+          <Link
+            href="/settings"
+            className={cn(
+              "flex items-center justify-center gap-2 px-4 py-3 rounded-xl transition-all duration-300 group",
+              location === "/settings"
+                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                : "text-muted-foreground hover:bg-white/50 hover:text-foreground"
+            )}
+          >
+            <SettingsIcon className={cn("h-5 w-5", location === "/settings" ? "text-white" : "group-hover:text-primary")} />
+            <span className="font-medium">{t("nav.settings")}</span>
+          </Link>
 
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border-2 border-white shadow-sm shrink-0">

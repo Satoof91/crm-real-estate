@@ -333,6 +333,13 @@ class NotificationService {
       // Import storage here to avoid circular dependency
       const { storage } = await import('../storage');
 
+      // Check if auto payment notifications are enabled
+      const autoNotificationsEnabled = await storage.getSystemSetting('autoPaymentNotifications');
+      if (autoNotificationsEnabled === 'false') {
+        console.log('Auto payment notifications are disabled in system settings. Skipping.');
+        return;
+      }
+
       // Get all upcoming payments within 31 days (to cover 30-day reminders)
       const upcomingPayments = await storage.getUpcomingPaymentsWithDetails(31);
       console.log(`Found ${upcomingPayments.length} upcoming payments to check`);
@@ -463,6 +470,13 @@ class NotificationService {
     try {
       // Import storage here to avoid circular dependency
       const { storage } = await import('../storage');
+
+      // Check if auto monthly summary is enabled
+      const autoMonthlySummaryEnabled = await storage.getSystemSetting('autoMonthlySummary');
+      if (autoMonthlySummaryEnabled === 'false') {
+        console.log('Auto monthly summary is disabled in system settings. Skipping.');
+        return;
+      }
 
       // Get all users
       const users = await storage.getUsers();

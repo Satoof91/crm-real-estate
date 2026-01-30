@@ -74,6 +74,13 @@ export const payments = sqliteTable("payments", {
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// System-wide settings table
+export const systemSettings = sqliteTable("system_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 // Notification Types
 export const NotificationType = {
   PAYMENT_REMINDER: 'payment_reminder',

@@ -851,6 +851,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // System Settings Routes
+  app.get("/api/settings", isAuthenticated, async (req, res) => {
+    try {
+      const settings = await storage.getSystemSettings();
+      res.json(settings);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/settings", isManagerOrAdmin, async (req, res) => {
+    try {
+      const { key, value } = req.body;
+      if (!key || value === undefined) {
+        return res.status(400).json({ error: "Key and value are required" });
+      }
+      await storage.setSystemSetting(key, String(value));
+      res.json({ success: true, key, value });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

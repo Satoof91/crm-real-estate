@@ -40,10 +40,28 @@
     "expired": "Expired"
   },
   "settings": {
-    "title": "Display Settings",
+    "title": "Settings",
+    "subtitle": "Manage your application preferences",
+    "appearanceSettings": "Appearance",
+    "appearanceSettingsDescription": "Customize the look and feel of the application",
+    "theme": "Theme",
+    "themeDescription": "Switch between light and dark mode",
+    "language": "Language",
+    "languageDescription": "Choose your preferred language",
+    "displaySettings": "Display Settings",
+    "displaySettingsDescription": "Customize how information is displayed",
     "calendarType": "Calendar Type",
+    "calendarTypeDescription": "Choose between Gregorian or Hijri calendar for dates",
     "gregorian": "Gregorian",
-    "hijri": "Hijri (Islamic)"
+    "hijri": "Hijri",
+    "notificationSettings": "Notification Settings",
+    "notificationSettingsDescription": "Control automatic WhatsApp notifications",
+    "autoPaymentNotifications": "Automatic Payment Reminders",
+    "autoPaymentNotificationsDescription": "Send WhatsApp reminders before payment due dates",
+    "autoMonthlySummary": "Monthly Unpaid Summary",
+    "autoMonthlySummaryDescription": "Send monthly summary of unpaid payments at end of month",
+    "saved": "Setting saved successfully",
+    "saveFailed": "Failed to save setting"
   },
   "auth": {
     "login": "Login",
