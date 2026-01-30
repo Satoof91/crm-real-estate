@@ -497,23 +497,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const fixedContract = fixContractDates(contract);
 
-      // If frequency changed, regenerate pending payments
-      if (isFrequencyChanging) {
-        console.log(`Payment frequency changed from ${existingContract.paymentFrequency} to ${validatedData.paymentFrequency}`);
+      // Check if critical fields changed (amount, frequency, dates)
+      const isAmountChanging = validatedData.rentAmount &&
+        existingContract.rentAmount !== validatedData.rentAmount;
+      const isStartDateChanging = validatedData.startDate &&
+        new Date(existingContract.startDate).getTime() !== new Date(validatedData.startDate).getTime();
+      const isEndDateChanging = validatedData.endDate &&
+        new Date(existingContract.endDate).getTime() !== new Date(validatedData.endDate).getTime();
 
-        // Delete only pending payments (keep paid and overdue)
+      const shouldRegeneratePayments = isFrequencyChanging || isAmountChanging || isStartDateChanging || isEndDateChanging;
+
+      const updatedContract = await storage.updateContract(req.params.id, validatedData);
+
+      // If key contract terms changed, regenerate pending payments
+      if (shouldRegeneratePayments && updatedContract) {
+        console.log(`Contract terms changed for ${req.params.id}, regenerating pending payments...`);
+        console.log(`Changes: Freq=${isFrequencyChanging}, Amount=${isAmountChanging}, Start=${isStartDateChanging}, End=${isEndDateChanging}`);
+
+        // 1. Delete all pending payments
         const deletedCount = await storage.deletePendingPaymentsByContract(req.params.id);
         console.log(`Deleted ${deletedCount} pending payments`);
 
-        // Calculate the 1st of next month as the starting point
-        const now = new Date();
-        const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        // 2. Determine start date for new payments
+        let startFromDate: Date;
 
-        console.log(`Generating new payments starting from ${nextMonthStart.toISOString()}`);
+        // check for last paid/overdue payment to continue from there
+        const lastNonPendingDate = await storage.getLastNonPendingPaymentDate(req.params.id);
 
-        // Generate new payments starting from 1st of next month
+        if (lastNonPendingDate) {
+          console.log(`Found last non-pending payment date: ${lastNonPendingDate.toISOString()}`);
+          // Calculate next due date based on NEW frequency from the last paid date
+          // We need to use the helper function logic here but it's inside generatePaymentSchedule
+          // So we'll pass the last paid date and let generatePaymentSchedule handle the "next" logic? 
+          // No, generatePaymentSchedule takes a start date and generates FROM there.
+          // So we need to calculate the *next* due date manually here.
+
+          const getNextDate = (date: Date, frequency: string) => {
+            switch (frequency.toLowerCase()) {
+              case 'monthly': return addMonths(date, 1);
+              case 'quarterly': return addMonths(date, 3);
+              case 'semi-annually': return addMonths(date, 6);
+              case 'yearly': return addMonths(date, 12);
+              case 'weekly': return addDays(date, 7);
+              default: return addMonths(date, 1);
+            }
+          };
+
+          // The new payments should start AFTER the last paid payment
+          startFromDate = getNextDate(lastNonPendingDate, updatedContract.paymentFrequency);
+          console.log(`Starting new payments from (last paid + freq): ${startFromDate.toISOString()}`);
+        } else {
+          // No paid payments, start from the (potentially new) contract start date
+          // BUT check if the start date is in the past? 
+          // If we change start date to today, we want payments from today.
+          // If we change start date to last year, we want payments from last year (that are now pending/overdue).
+          // Since we deleted "pending", we are regenerating them.
+          // However, we should be careful about recreating "overdue" payments if they were deleted?
+          // deletePendingPaymentsByContract ONLY deletes 'pending'. 
+          // So 'overdue' payments remain and define the `lastNonPendingDate`.
+          // So if we have overdue payments, we start after them.
+          // If we have NO non-pending (no paid, no overdue), we start from contract start date.
+
+          startFromDate = new Date(updatedContract.startDate);
+          console.log(`No non-pending payments found. Starting from contract start: ${startFromDate.toISOString()}`);
+        }
+
+        // 3. Generate new payments
         try {
-          const newPayments = generatePaymentSchedule(fixedContract, nextMonthStart);
+          // We pass the updated contract to use new amount/dates/frequency
+          const newPayments = generatePaymentSchedule(updatedContract, startFromDate);
           console.log(`Generated ${newPayments.length} new payments`);
 
           for (const payment of newPayments) {
@@ -523,11 +575,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('All new payments created successfully');
         } catch (scheduleError: any) {
           console.error('Error regenerating payment schedule:', scheduleError);
-          // Don't fail the contract update, but log the error
         }
       }
 
-      res.json(fixedContract);
+      res.json(updatedContract);
     } catch (error: any) {
       console.error('Contract update error:', error);
       console.error('Error stack:', error.stack);
@@ -617,39 +668,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send notification if status changed to 'paid'
       if (existingPayment.status !== 'paid' && validatedData.status === 'paid') {
         try {
-          // Import services dynamically to avoid circular dependencies
-          const { whatsAppService } = await import('./services/whatsapp.service');
-          const { getTemplate, renderTemplate } = await import('./services/notification-templates');
+          // Check if payment paid notifications are enabled
+          const paymentPaidEnabled = await storage.getSystemSetting('paymentPaidNotifications');
+          if (paymentPaidEnabled === 'false') {
+            console.log('Payment paid notifications are disabled in system settings. Skipping.');
+          } else {
+            // Import services dynamically to avoid circular dependencies
+            const { whatsAppService } = await import('./services/whatsapp.service');
+            const { getTemplate, renderTemplate } = await import('./services/notification-templates');
 
-          // Fetch related data
-          const contract = await storage.getContract(payment.contractId);
-          if (contract) {
-            const unit = await storage.getUnit(contract.unitId);
-            const contact = await storage.getContact(contract.contactId);
+            // Fetch related data
+            const contract = await storage.getContract(payment.contractId);
+            if (contract) {
+              const unit = await storage.getUnit(contract.unitId);
+              const contact = await storage.getContact(contract.contactId);
 
-            if (contact && contact.phone) {
-              // Get Arabic template for payment confirmation
-              const template = getTemplate('payment_received', 'ar');
-              if (template) {
-                const message = renderTemplate(template.body, {
-                  tenantName: contact.fullName,
-                  amount: payment.amount,
-                  paymentDate: new Date().toLocaleDateString('ar-SA'),
-                  unitNumber: unit?.unitNumber || 'N/A',
-                  referenceNumber: payment.id.substring(0, 8).toUpperCase(),
-                  companyName: 'Real Estate CRM'
-                });
+              if (contact && contact.phone) {
+                // Get Arabic template for payment confirmation
+                const template = getTemplate('payment_received', 'ar');
+                if (template) {
+                  const message = renderTemplate(template.body, {
+                    tenantName: contact.fullName,
+                    amount: payment.amount,
+                    paymentDate: new Date().toLocaleDateString('ar-SA'),
+                    unitNumber: unit?.unitNumber || 'N/A',
+                    referenceNumber: payment.id.substring(0, 8).toUpperCase(),
+                    companyName: 'Real Estate CRM'
+                  });
 
-                console.log('📱 Sending payment confirmation notification...');
-                const result = await whatsAppService.sendMessage({
-                  to: contact.phone,
-                  message: message
-                });
+                  console.log('📱 Sending payment confirmation notification...');
+                  const result = await whatsAppService.sendMessage({
+                    to: contact.phone,
+                    message: message
+                  });
 
-                if (result.success) {
-                  console.log('✅ Payment confirmation sent to', contact.phone);
-                } else {
-                  console.error('❌ Failed to send payment confirmation:', result.error);
+                  if (result.success) {
+                    console.log('✅ Payment confirmation sent to', contact.phone);
+                  } else {
+                    console.error('❌ Failed to send payment confirmation:', result.error);
+                  }
                 }
               }
             }

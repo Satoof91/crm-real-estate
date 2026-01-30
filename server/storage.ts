@@ -485,6 +485,24 @@ export class DbStorage implements IStorage {
       await db.insert(systemSettings).values({ key, value });
     }
   }
+  async getLastNonPendingPaymentDate(contractId: string): Promise<Date | null> {
+    const result = await db
+      .select({ dueDate: payments.dueDate })
+      .from(payments)
+      .where(
+        and(
+          eq(payments.contractId, contractId),
+          ne(payments.status, 'pending')
+        )
+      )
+      .orderBy(desc(payments.dueDate))
+      .limit(1);
+
+    if (result.length > 0) {
+      return new Date(result[0].dueDate);
+    }
+    return null;
+  }
 }
 
 export const storage = new DbStorage();

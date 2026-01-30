@@ -60,6 +60,8 @@
     "autoPaymentNotificationsDescription": "إرسال تذكيرات واتساب قبل تاريخ استحقاق الدفع",
     "autoMonthlySummary": "ملخص المستحقات الشهري",
     "autoMonthlySummaryDescription": "إرسال ملخص شهري للمدفوعات غير المسددة في نهاية الشهر",
+    "paymentPaidNotifications": "تأكيد الدفع",
+    "paymentPaidNotificationsDescription": "إرسال تأكيد عبر واتساب عند تسجيل الدفع",
     "saved": "تم حفظ الإعداد بنجاح",
     "saveFailed": "فشل في حفظ الإعداد"
   },

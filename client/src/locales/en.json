@@ -60,6 +60,8 @@
     "autoPaymentNotificationsDescription": "Send WhatsApp reminders before payment due dates",
     "autoMonthlySummary": "Monthly Unpaid Summary",
     "autoMonthlySummaryDescription": "Send monthly summary of unpaid payments at end of month",
+    "paymentPaidNotifications": "Payment Confirmation",
+    "paymentPaidNotificationsDescription": "Send WhatsApp confirmation when payment is marked as paid",
     "saved": "Setting saved successfully",
     "saveFailed": "Failed to save setting"
   },

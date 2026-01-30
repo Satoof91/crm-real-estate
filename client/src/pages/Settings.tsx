@@ -11,6 +11,7 @@ import { useTheme } from "@/components/ThemeProvider";
 interface SystemSettings {
     autoPaymentNotifications: boolean;
     autoMonthlySummary: boolean;
+    paymentPaidNotifications: boolean;
 }
 
 export default function Settings() {
@@ -22,6 +23,7 @@ export default function Settings() {
     const [systemSettings, setSystemSettings] = useState<SystemSettings>({
         autoPaymentNotifications: true,
         autoMonthlySummary: true,
+        paymentPaidNotifications: true,
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -39,6 +41,7 @@ export default function Settings() {
                     setSystemSettings({
                         autoPaymentNotifications: data.autoPaymentNotifications !== "false",
                         autoMonthlySummary: data.autoMonthlySummary !== "false",
+                        paymentPaidNotifications: data.paymentPaidNotifications !== "false",
                     });
                 }
             } catch (error) {
@@ -264,6 +267,26 @@ export default function Settings() {
                                     id="monthly-summary"
                                     checked={systemSettings.autoMonthlySummary}
                                     onCheckedChange={(checked) => handleNotificationToggle('autoMonthlySummary', checked)}
+                                    disabled={saving}
+                                />
+                            </div>
+
+                            <div className="border-t border-white/10" />
+
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="payment-paid" className="flex items-center gap-2">
+                                        <MessageSquare className="h-4 w-4" />
+                                        {t("settings.paymentPaidNotifications", "Payment Confirmation")}
+                                    </Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        {t("settings.paymentPaidNotificationsDescription", "Send WhatsApp confirmation when payment is marked as paid")}
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="payment-paid"
+                                    checked={systemSettings.paymentPaidNotifications}
+                                    onCheckedChange={(checked) => handleNotificationToggle('paymentPaidNotifications', checked)}
                                     disabled={saving}
                                 />
                             </div>
