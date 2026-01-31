@@ -399,7 +399,7 @@ export function SendNotificationDialog({
   };
 
   const sendNotification = async () => {
-    if (!recipientPhone || !message) {
+    if ((recipientType === 'individual' && !recipientPhone) || !message) {
       toast({
         title: language === 'ar' ? 'خطأ' : 'Error',
         description: language === 'ar' ? 'يرجى ملء جميع الحقول المطلوبة' : 'Please fill all required fields',
