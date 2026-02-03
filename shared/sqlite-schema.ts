@@ -94,6 +94,7 @@ export const NotificationType = {
   MAINTENANCE_COMPLETED: 'maintenance_completed',
   ANNOUNCEMENT: 'announcement',
   WELCOME: 'welcome',
+  SYSTEM_ALERT: 'system_alert',
 } as const;
 
 export const NotificationStatus = {
@@ -109,6 +110,7 @@ export const NotificationChannel = {
   EMAIL: 'email',
   SMS: 'sms',
   IN_APP: 'in_app',
+  INTERNAL: 'internal',
 } as const;
 
 // Notifications table for SQLite
