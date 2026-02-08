@@ -74,9 +74,11 @@ export const payments = sqliteTable("payments", {
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
-// System-wide settings table
-export const systemSettings = sqliteTable("system_settings", {
-  key: text("key").primaryKey(),
+// User-specific settings table
+export const userSettings = sqliteTable("user_settings", {
+  id: text("id").primaryKey().$defaultFn(() => generateId()),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  key: text("key").notNull(),
   value: text("value").notNull(),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });

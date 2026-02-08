@@ -8,7 +8,7 @@ import {
   units,
   contracts,
   payments,
-  systemSettings,
+  userSettings,
   type User,
   type InsertUser,
   type Contact,
@@ -82,10 +82,10 @@ export interface IStorage {
   }[]>;
   getOverduePayments(userId: string): Promise<Payment[]>;
 
-  // System Settings
-  getSystemSettings(): Promise<Record<string, string>>;
-  getSystemSetting(key: string): Promise<string | undefined>;
-  setSystemSetting(key: string, value: string): Promise<void>;
+  // User Settings
+  getUserSettings(userId: string): Promise<Record<string, string>>;
+  getUserSetting(userId: string, key: string): Promise<string | undefined>;
+  setUserSetting(userId: string, key: string, value: string): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
@@ -460,9 +460,9 @@ export class DbStorage implements IStorage {
     return result;
   }
 
-  // System Settings
-  async getSystemSettings(): Promise<Record<string, string>> {
-    const result = await db.select().from(systemSettings);
+  // User Settings
+  async getUserSettings(userId: string): Promise<Record<string, string>> {
+    const result = await db.select().from(userSettings).where(eq(userSettings.userId, userId));
     const settings: Record<string, string> = {};
     for (const row of result) {
       settings[row.key] = row.value;
@@ -470,19 +470,27 @@ export class DbStorage implements IStorage {
     return settings;
   }
 
-  async getSystemSetting(key: string): Promise<string | undefined> {
-    const result = await db.select().from(systemSettings).where(eq(systemSettings.key, key));
+  async getUserSetting(userId: string, key: string): Promise<string | undefined> {
+    const result = await db
+      .select()
+      .from(userSettings)
+      .where(and(eq(userSettings.userId, userId), eq(userSettings.key, key)));
     return result[0]?.value;
   }
 
-  async setSystemSetting(key: string, value: string): Promise<void> {
-    const existing = await db.select().from(systemSettings).where(eq(systemSettings.key, key));
+  async setUserSetting(userId: string, key: string, value: string): Promise<void> {
+    const existing = await db
+      .select()
+      .from(userSettings)
+      .where(and(eq(userSettings.userId, userId), eq(userSettings.key, key)));
+
     if (existing.length > 0) {
-      await db.update(systemSettings)
+      await db
+        .update(userSettings)
         .set({ value, updatedAt: new Date().toISOString() })
-        .where(eq(systemSettings.key, key));
+        .where(and(eq(userSettings.userId, userId), eq(userSettings.key, key)));
     } else {
-      await db.insert(systemSettings).values({ key, value });
+      await db.insert(userSettings).values({ userId, key, value });
     }
   }
   async getLastNonPendingPaymentDate(contractId: string): Promise<Date | null> {

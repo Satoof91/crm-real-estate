@@ -77,6 +77,14 @@ export const payments = pgTable("payments", {
   createdAt: timestamp("created_at").notNull().$defaultFn(() => new Date()),
 });
 
+export const userSettings = pgTable("user_settings", {
+  id: varchar("id").primaryKey().$defaultFn(() => generateId()),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  key: text("key").notNull(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").notNull().$defaultFn(() => new Date()),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 
 // Manual contact schema for SQLite integer boolean compatibility
@@ -160,3 +168,5 @@ export type Contract = typeof contracts.$inferSelect;
 export type InsertContract = z.infer<typeof insertContractSchema>;
 export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+
+export * from "./notifications-schema";

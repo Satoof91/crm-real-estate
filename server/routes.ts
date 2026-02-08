@@ -668,10 +668,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send notification if status changed to 'paid'
       if (existingPayment.status !== 'paid' && validatedData.status === 'paid') {
         try {
+          const userId = (req.user as any).id;
           // Check if payment paid notifications are enabled
-          const paymentPaidEnabled = await storage.getSystemSetting('paymentPaidNotifications');
+          const paymentPaidEnabled = await storage.getUserSetting(userId, 'paymentPaidNotifications');
           if (paymentPaidEnabled === 'false') {
-            console.log('Payment paid notifications are disabled in system settings. Skipping.');
+            console.log('Payment paid notifications are disabled in user settings. Skipping.');
           } else {
             // Import services dynamically to avoid circular dependencies
             const { whatsAppService } = await import('./services/whatsapp.service');
@@ -908,23 +909,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // System Settings Routes
+  // User Settings Routes
   app.get("/api/settings", isAuthenticated, async (req, res) => {
     try {
-      const settings = await storage.getSystemSettings();
+      const userId = (req.user as any).id;
+      const settings = await storage.getUserSettings(userId);
       res.json(settings);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.put("/api/settings", isManagerOrAdmin, async (req, res) => {
+  app.put("/api/settings", isAuthenticated, async (req, res) => {
     try {
+      const userId = (req.user as any).id;
       const { key, value } = req.body;
       if (!key || value === undefined) {
         return res.status(400).json({ error: "Key and value are required" });
       }
-      await storage.setSystemSetting(key, String(value));
+      await storage.setUserSetting(userId, key, String(value));
       res.json({ success: true, key, value });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
