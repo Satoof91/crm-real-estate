@@ -224,48 +224,88 @@ export default function Properties() {
 
                 {/* Units Table (Expandable) */}
                 {isExpanded && (
-                  <div className="bg-muted/30 overflow-x-auto">
+                  <div className="bg-muted/30">
                     {buildingUnits.length > 0 ? (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>{t('properties.unitNumber')}</TableHead>
-                            <TableHead>{t('properties.unitType')}</TableHead>
-                            <TableHead>{t('properties.size')}</TableHead>
-                            <TableHead>{t('properties.status')}</TableHead>
-                            <TableHead className="text-right rtl:text-left">{t('common.actions')}</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
+                      <>
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>{t('properties.unitNumber')}</TableHead>
+                                <TableHead>{t('properties.unitType')}</TableHead>
+                                <TableHead>{t('properties.size')}</TableHead>
+                                <TableHead>{t('properties.status')}</TableHead>
+                                <TableHead className="text-right rtl:text-left">{t('common.actions')}</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {buildingUnits.map((unit: any) => (
+                                <TableRow key={unit.id}>
+                                  <TableCell className="font-medium">{unit.unitNumber}</TableCell>
+                                  <TableCell>{unit.type}</TableCell>
+                                  <TableCell>{unit.size || t('common.na')}</TableCell>
+                                  <TableCell>{getStatusBadge(unit.status)}</TableCell>
+                                  <TableCell className="text-right rtl:text-left">
+                                    <div className="flex items-center justify-end rtl:justify-start gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleEditUnit(unit)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDeleteUnit(unit)}
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="md:hidden space-y-3 p-3">
                           {buildingUnits.map((unit: any) => (
-                            <TableRow key={unit.id}>
-                              <TableCell className="font-medium">{unit.unitNumber}</TableCell>
-                              <TableCell>{unit.type}</TableCell>
-                              <TableCell>{unit.size || t('common.na')}</TableCell>
-                              <TableCell>{getStatusBadge(unit.status)}</TableCell>
-                              <TableCell className="text-right rtl:text-left">
-                                <div className="flex items-center justify-end rtl:justify-start gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditUnit(unit)}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDeleteUnit(unit)}
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                            <div key={unit.id} className="bg-background border rounded-lg p-3 shadow-sm flex items-center justify-between">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold">{unit.unitNumber}</span>
+                                  {getStatusBadge(unit.status)}
                                 </div>
-                              </TableCell>
-                            </TableRow>
+                                <div className="text-xs text-muted-foreground">
+                                  {unit.type} • {unit.size || t('common.na')} sq.ft
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => handleEditUnit(unit)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => handleDeleteUnit(unit)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
                           ))}
-                        </TableBody>
-                      </Table>
+                        </div>
+                      </>
                     ) : (
                       <div className="p-8 text-center text-sm text-muted-foreground">
                         {t('properties.noUnits')}
