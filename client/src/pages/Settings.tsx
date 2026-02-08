@@ -54,7 +54,7 @@ export default function Settings() {
     }, []);
 
     // Save a single setting
-    const saveSetting = async (key: string, value: boolean) => {
+    const saveSetting = async (key: string, value: string | boolean) => {
         setSaving(true);
         try {
             const response = await fetch("/api/settings", {
@@ -92,10 +92,13 @@ export default function Settings() {
         const newLang = isArabic ? 'en' : 'ar';
         i18n.changeLanguage(newLang);
         document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
+        saveSetting('language', newLang); // Save to DB
     };
 
     const toggleTheme = () => {
-        setTheme(isDark ? 'light' : 'dark');
+        const newTheme = isDark ? 'light' : 'dark';
+        setTheme(newTheme);
+        saveSetting('theme', newTheme); // Save to DB
     };
 
     return (
@@ -142,6 +145,7 @@ export default function Settings() {
                                 id="theme-toggle"
                                 checked={isDark}
                                 onCheckedChange={toggleTheme}
+                                disabled={saving}
                             />
                             <span className={`text-sm ${isDark ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
                                 {t("common.dark", "Dark")}
@@ -170,6 +174,7 @@ export default function Settings() {
                                 id="language-toggle"
                                 checked={isArabic}
                                 onCheckedChange={toggleLanguage}
+                                disabled={saving}
                             />
                             <span className={`text-sm ${isArabic ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
                                 العربية
@@ -205,7 +210,12 @@ export default function Settings() {
                             <Switch
                                 id="calendar-type"
                                 checked={calendarType === 'hijri'}
-                                onCheckedChange={(checked) => setCalendarType(checked ? 'hijri' : 'gregorian')}
+                                onCheckedChange={(checked) => {
+                                    const newType = checked ? 'hijri' : 'gregorian';
+                                    setCalendarType(newType);
+                                    saveSetting('calendarType', newType);
+                                }}
+                                disabled={saving}
                             />
                             <span className={`text-sm ${calendarType === 'hijri' ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
                                 {t("settings.hijri", "Hijri")}

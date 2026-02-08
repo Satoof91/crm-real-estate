@@ -338,16 +338,16 @@ function AppContent() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <TooltipProvider>
-          <SettingsProvider>
-            <AuthProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            <SettingsProvider>
               <AppContent />
               <Toaster />
-            </AuthProvider>
-          </SettingsProvider>
-        </TooltipProvider>
-      </ThemeProvider>
+            </SettingsProvider>
+          </TooltipProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
