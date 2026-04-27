@@ -4,7 +4,7 @@ import { Capacitor } from "@capacitor/core";
 // In mobile app, API calls must go to the deployed server
 // In web browser, relative paths work (same-origin via proxy)
 export const API_BASE = Capacitor.isNativePlatform()
-  ? "https://real-estate-crm.onrender.com"
+  ? "https://crm-real-estate-yqh6.onrender.com"
   : "";
 
 async function throwIfResNotOk(res: Response) {
