@@ -32,8 +32,16 @@ class WhatsAppService {
    * Send WhatsApp message via Wasender
    */
   async sendMessage(params: WhatsAppMessage): Promise<WhatsAppResponse> {
+    return this.sendMessageWithKey(params, this.apiKey);
+  }
+
+  /**
+   * Send WhatsApp message with a specific API key (per-user key support)
+   */
+  async sendMessageWithKey(params: WhatsAppMessage, apiKey?: string): Promise<WhatsAppResponse> {
+    const keyToUse = apiKey || this.apiKey;
     try {
-      if (!this.apiKey) {
+      if (!keyToUse) {
         return {
           success: false,
           error: 'Wasender API key not configured',
@@ -53,19 +61,17 @@ class WhatsAppService {
 
       const response = await axios.post(this.apiUrl, payload, {
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
+          'Authorization': `Bearer ${keyToUse}`,
           'Content-Type': 'application/json'
         }
       });
 
       console.log(`✅ Message sent successfully!`);
-      // Wasender response structure needs to be handled. Assuming success if 200 OK.
-      // Adjust based on actual API response if needed.
       console.log('   Response:', response.data);
 
       return {
         success: true,
-        messageId: response.data.id || 'unknown', // Adjust based on actual response
+        messageId: response.data.id || 'unknown',
         status: 'sent',
       };
 

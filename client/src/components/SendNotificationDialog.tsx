@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '@/lib/queryClient';
 import {
   Dialog,
   DialogContent,
@@ -268,7 +269,7 @@ export function SendNotificationDialog({
 
   const loadContacts = async () => {
     try {
-      const response = await fetch('/api/contacts');
+      const response = await fetch(`${API_BASE}/api/contacts`);
       if (response.ok) {
         const data = await response.json();
         setContacts(data.data || []);
@@ -289,8 +290,8 @@ export function SendNotificationDialog({
 
       // Fetch contract and payment data
       try {
-        const contractsResponse = await fetch('/api/contracts');
-        const paymentsResponse = await fetch('/api/payments');
+        const contractsResponse = await fetch(`${API_BASE}/api/contracts`);
+        const paymentsResponse = await fetch(`${API_BASE}/api/payments`);
 
         if (contractsResponse.ok && paymentsResponse.ok) {
           const contractsData = await contractsResponse.json();
@@ -304,13 +305,13 @@ export function SendNotificationDialog({
 
           if (activeContract) {
             // Fetch unit info
-            const unitResponse = await fetch(`/api/units/${activeContract.unitId}`);
+            const unitResponse = await fetch(`${API_BASE}/api/units/${activeContract.unitId}`);
             if (unitResponse.ok) {
               const unit = await unitResponse.json();
               unitNumber = unit.unitNumber || 'N/A';
 
               // Fetch building info
-              const buildingResponse = await fetch(`/api/buildings/${unit.buildingId}`);
+              const buildingResponse = await fetch(`${API_BASE}/api/buildings/${unit.buildingId}`);
               if (buildingResponse.ok) {
                 const building = await buildingResponse.json();
                 buildingName = building.name || 'N/A';
@@ -429,7 +430,7 @@ export function SendNotificationDialog({
           message
         };
 
-      const response = await fetch(endpoint, {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)

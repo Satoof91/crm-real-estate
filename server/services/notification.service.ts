@@ -1,15 +1,14 @@
-import { db } from '../../db';
+import { db } from '../db';
 import {
   notifications,
   NotificationStatus,
   NotificationChannel,
   NotificationType
 } from '@shared/sqlite-schema';
-// For Postgres-only features (templates/preferences), import conditionally or skip
-// import { notificationTemplates, notificationPreferences } from '@shared/notifications-schema';
 import { whatsAppService } from './whatsapp.service';
 import { getTemplate, renderTemplate, type TemplateVariable } from './notification-templates';
-import { eq, and, lt, gte } from 'drizzle-orm';
+import { eq, and, lt, gte, or } from 'drizzle-orm';
+import { storage } from '../storage';
 import cron from 'node-cron';
 
 class NotificationService {
@@ -137,10 +136,26 @@ class NotificationService {
       switch (notification.channel) {
         case NotificationChannel.WHATSAPP:
           if (notification.recipientPhone) {
-            const result = await whatsAppService.sendMessage({
-              to: notification.recipientPhone,
-              message: notification.message,
-            });
+            // Look up per-user Wasender API key via the contact's owner
+            let wasenderApiKey: string | undefined;
+            try {
+              // contacts.userId links a contact to the user (customer) account
+              const { contacts } = await import('@shared/sqlite-schema');
+              const contactRows = await db
+                .select()
+                .from(contacts)
+                .where(eq(contacts.id, notification.recipientId))
+                .limit(1);
+              if (contactRows[0]?.userId) {
+                wasenderApiKey = await storage.getUserSetting(contactRows[0].userId, 'wasenderApiKey') || undefined;
+              }
+            } catch (_) {
+              // ignore – fall back to global key
+            }
+            const result = await whatsAppService.sendMessageWithKey(
+              { to: notification.recipientPhone, message: notification.message },
+              wasenderApiKey
+            );
             success = result.success;
             messageId = result.messageId;
             error = result.error;
@@ -167,11 +182,11 @@ class NotificationService {
       await db.update(notifications)
         .set({
           status: success ? NotificationStatus.SENT : NotificationStatus.FAILED,
-          sentAt: success ? new Date() : undefined,
+          sentAt: success ? new Date().toISOString() : undefined,
           whatsappMessageId: messageId,
           failureReason: error,
           retryCount: notification.retryCount + 1,
-          updatedAt: new Date(),
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(notifications.id, notificationId));
 
@@ -184,8 +199,8 @@ class NotificationService {
         .set({
           status: NotificationStatus.FAILED,
           failureReason: error.message,
-          failedAt: new Date(),
-          updatedAt: new Date(),
+          failedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(notifications.id, notificationId));
 
@@ -224,12 +239,12 @@ class NotificationService {
    * Get recipient preferences
    */
   async getRecipientPreferences(recipientId: string) {
-    const [preference] = await db
-      .select()
-      .from(notificationPreferences)
-      .where(eq(notificationPreferences.userId, recipientId));
-
-    return preference;
+    try {
+      return await storage.getNotificationPreferences(recipientId);
+    } catch (error) {
+      console.error('Error getting recipient preferences:', error);
+      return undefined; // Default to all enabled when no preferences found
+    }
   }
 
   /**
@@ -306,13 +321,14 @@ class NotificationService {
   async processScheduledNotifications() {
     try {
       const now = new Date();
+      const nowISO = now.toISOString();
       const pendingNotifications = await db
         .select()
         .from(notifications)
         .where(
           and(
             eq(notifications.status, NotificationStatus.PENDING),
-            lt(notifications.scheduledFor!, now)
+            lt(notifications.scheduledFor!, nowISO)
           )
         );
 
@@ -331,17 +347,40 @@ class NotificationService {
     try {
       const maxRetries = Number(process.env.NOTIFICATION_RETRY_ATTEMPTS) || 3;
 
+      const now = new Date();
+      // 7 days ago limit
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      // 6 hours ago limit for extended retries
+      const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+
+      // Use ISO strings for SQLite TEXT column comparison
+      const sevenDaysAgoISO = sevenDaysAgo.toISOString();
+      const sixHoursAgoISO = sixHoursAgo.toISOString();
+
       const failedNotifications = await db
         .select()
         .from(notifications)
         .where(
           and(
             eq(notifications.status, NotificationStatus.FAILED),
-            lt(notifications.retryCount, maxRetries)
+            gte(notifications.createdAt, sevenDaysAgoISO),
+            or(
+              // Standard retry logic: under max retries
+              lt(notifications.retryCount, maxRetries),
+              // Extended WhatsApp retry logic: >= max retries, channel is WhatsApp, and last updated > 6 hours ago
+              and(
+                eq(notifications.channel, NotificationChannel.WHATSAPP as any),
+                gte(notifications.retryCount, maxRetries),
+                lt(notifications.updatedAt, sixHoursAgoISO)
+              )
+            )
           )
         );
 
       for (const notification of failedNotifications) {
+        if (notification.retryCount >= maxRetries) {
+          console.log(`[WhatsApp Queue] Retrying extended WhatsApp message ${notification.id} (Attempt ${notification.retryCount + 1})`);
+        }
         await this.processNotification(notification.id);
       }
     } catch (error) {
@@ -655,10 +694,15 @@ class NotificationService {
               companyName: 'Real Estate CRM'
             });
 
-            const result = await whatsAppService.sendMessage({
-              to: contact.phone,
-              message: message
-            });
+            // Resolve per-user Wasender API key
+            let userWasenderKey: string | undefined;
+            try {
+              userWasenderKey = await storage.getUserSetting(contact.userId, 'wasenderApiKey') || undefined;
+            } catch (_) { }
+            const result = await whatsAppService.sendMessageWithKey(
+              { to: contact.phone, message: message },
+              userWasenderKey
+            );
 
             const status = result.success ? NotificationStatus.SENT : NotificationStatus.FAILED;
 
@@ -731,8 +775,8 @@ class NotificationService {
     await db.update(notifications)
       .set({
         status: NotificationStatus.READ,
-        readAt: new Date(),
-        updatedAt: new Date(),
+        readAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(notifications.id, notificationId));
   }
@@ -741,21 +785,10 @@ class NotificationService {
    * Update recipient preferences
    */
   async updatePreferences(userId: string, preferences: any) {
-    const existing = await this.getRecipientPreferences(userId);
-
-    if (existing) {
-      await db.update(notificationPreferences)
-        .set({
-          ...preferences,
-          updatedAt: new Date(),
-        })
-        .where(eq(notificationPreferences.userId, userId));
-    } else {
-      await db.insert(notificationPreferences)
-        .values({
-          userId,
-          ...preferences,
-        });
+    try {
+      await storage.updateNotificationPreferences(userId, preferences);
+    } catch (error) {
+      console.error('Error updating preferences:', error);
     }
   }
 }

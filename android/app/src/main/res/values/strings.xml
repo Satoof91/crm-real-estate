@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PropManager</string>
+    <string name="title_activity_main">PropManager</string>
+    <string name="package_name">com.propmanager.crm</string>
+    <string name="custom_url_scheme">com.propmanager.crm</string>
+</resources>

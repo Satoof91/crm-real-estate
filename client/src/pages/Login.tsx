@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_BASE } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -115,6 +116,22 @@ export default function Login() {
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? t("common.loading") : t("auth.login")}
             </Button>
+
+            {/* Demo credentials note */}
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm">
+              <p className="font-semibold text-blue-800 mb-1">🎯 Try a free demo</p>
+              <p className="text-blue-700">
+                <span className="font-medium">Username:</span>{" "}
+                <code className="bg-blue-100 px-1 rounded">demo</code>
+              </p>
+              <p className="text-blue-700">
+                <span className="font-medium">Password:</span>{" "}
+                <code className="bg-blue-100 px-1 rounded">demo123</code>
+              </p>
+              <p className="text-blue-600 text-xs mt-1">
+                Explore the app before subscribing — no sign-up required.
+              </p>
+            </div>
 
             <div className="text-center text-sm">
               <span className="text-gray-600">{t("auth.noAccount")} </span>

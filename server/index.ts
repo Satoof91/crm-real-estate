@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
+import cors from "cors";
 import path from "path";
 import { passport } from "./auth";
 import { registerRoutes } from "./routes";
@@ -11,6 +12,21 @@ import { pool } from "./db";
 
 const app = express();
 app.set("trust proxy", 1);
+
+// CORS configuration for Capacitor native apps
+app.use(cors({
+  origin: [
+    'capacitor://localhost',    // iOS Capacitor
+    'http://localhost',         // Android Capacitor
+    'https://localhost',        // Capacitor with HTTPS scheme
+    'http://localhost:5173',    // Vite dev server
+    'http://localhost:5000',    // Express dev server
+    'http://localhost:5012',    // Alternative dev port
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
 // Serve uploaded files
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
@@ -29,7 +45,8 @@ app.use(
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days for mobile persistence
     },
   })
 );

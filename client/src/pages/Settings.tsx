@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_BASE } from "@/lib/queryClient";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -35,7 +36,7 @@ export default function Settings() {
     useEffect(() => {
         async function fetchSettings() {
             try {
-                const response = await fetch("/api/settings", { credentials: "include" });
+                const response = await fetch(`${API_BASE}/api/settings`, { credentials: "include" });
                 if (response.ok) {
                     const data = await response.json();
                     setSystemSettings({
@@ -57,7 +58,7 @@ export default function Settings() {
     const saveSetting = async (key: string, value: string | boolean) => {
         setSaving(true);
         try {
-            const response = await fetch("/api/settings", {
+            const response = await fetch(`${API_BASE}/api/settings`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",

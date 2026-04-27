@@ -9,6 +9,8 @@ import {
   contracts,
   payments,
   userSettings,
+  systemSettings,
+  notificationPreferences,
   type User,
   type InsertUser,
   type Contact,
@@ -86,6 +88,14 @@ export interface IStorage {
   getUserSettings(userId: string): Promise<Record<string, string>>;
   getUserSetting(userId: string, key: string): Promise<string | undefined>;
   setUserSetting(userId: string, key: string, value: string): Promise<void>;
+
+  // System Settings
+  getSystemSetting(key: string): Promise<string | undefined>;
+  setSystemSetting(key: string, value: string, description?: string): Promise<void>;
+
+  // Notification Preferences
+  getNotificationPreferences(userId: string): Promise<any | undefined>;
+  updateNotificationPreferences(userId: string, prefs: Record<string, any>): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
@@ -510,6 +520,66 @@ export class DbStorage implements IStorage {
       return new Date(result[0].dueDate);
     }
     return null;
+  }
+
+  // System Settings
+  async getSystemSetting(key: string): Promise<string | undefined> {
+    const result = await db
+      .select()
+      .from(systemSettings)
+      .where(eq(systemSettings.key, key));
+    return result[0]?.value;
+  }
+
+  async setSystemSetting(key: string, value: string, description?: string): Promise<void> {
+    const existing = await db
+      .select()
+      .from(systemSettings)
+      .where(eq(systemSettings.key, key));
+
+    if (existing.length > 0) {
+      await db
+        .update(systemSettings)
+        .set({ value, updatedAt: new Date().toISOString() })
+        .where(eq(systemSettings.key, key));
+    } else {
+      await db.insert(systemSettings).values({
+        key,
+        value,
+        description: description || null,
+      });
+    }
+  }
+
+  // Notification Preferences
+  async getNotificationPreferences(userId: string): Promise<any | undefined> {
+    const result = await db
+      .select()
+      .from(notificationPreferences)
+      .where(eq(notificationPreferences.userId, userId));
+    return result[0];
+  }
+
+  async updateNotificationPreferences(userId: string, prefs: Record<string, any>): Promise<void> {
+    const existing = await db
+      .select()
+      .from(notificationPreferences)
+      .where(eq(notificationPreferences.userId, userId));
+
+    if (existing.length > 0) {
+      await db
+        .update(notificationPreferences)
+        .set({
+          ...prefs,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(notificationPreferences.userId, userId));
+    } else {
+      await db.insert(notificationPreferences).values({
+        userId,
+        ...prefs,
+      });
+    }
   }
 }
 

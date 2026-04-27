@@ -83,6 +83,44 @@ export const userSettings = sqliteTable("user_settings", {
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// System-wide settings table (for global notification toggles, etc.)
+export const systemSettings = sqliteTable("system_settings", {
+  id: text("id").primaryKey().$defaultFn(() => generateId()),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  description: text("description"),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Notification Preferences per user/contact (SQLite version)
+export const notificationPreferences = sqliteTable("notification_preferences", {
+  id: text("id").primaryKey().$defaultFn(() => generateId()),
+  userId: text("user_id").notNull(),
+
+  // Channel preferences (stored as 0/1 for SQLite)
+  whatsappEnabled: integer("whatsapp_enabled").notNull().default(1),
+  emailEnabled: integer("email_enabled").notNull().default(1),
+  smsEnabled: integer("sms_enabled").notNull().default(0),
+  inAppEnabled: integer("in_app_enabled").notNull().default(1),
+
+  // Type preferences
+  paymentReminders: integer("payment_reminders").notNull().default(1),
+  contractAlerts: integer("contract_alerts").notNull().default(1),
+  maintenanceUpdates: integer("maintenance_updates").notNull().default(1),
+  announcements: integer("announcements").notNull().default(1),
+
+  // Timing preferences
+  quietHoursStart: text("quiet_hours_start"),
+  quietHoursEnd: text("quiet_hours_end"),
+  timezone: text("timezone").default("UTC"),
+
+  // Language preference
+  preferredLanguage: text("preferred_language").default("en"),
+
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 // Notification Types
 export const NotificationType = {
   PAYMENT_REMINDER: 'payment_reminder',

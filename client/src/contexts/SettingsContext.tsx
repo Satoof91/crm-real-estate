@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useAuth } from "./AuthContext";
+import { API_BASE } from "@/lib/queryClient";
 import { useTheme } from "@/components/ThemeProvider";
 import i18n from "@/lib/i18n";
 
@@ -45,7 +46,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
             setIsLoading(true);
             try {
-                const response = await fetch("/api/settings", { credentials: "include" });
+                const response = await fetch(`${API_BASE}/api/settings`, { credentials: "include" });
                 if (response.ok) {
                     const settings = await response.json();
 

@@ -6,6 +6,8 @@ import { isAuthenticated, isManagerOrAdmin } from "./middleware";
 import { storage } from "./storage";
 import { upload } from "./upload";
 import notificationRoutes from "./notification-routes";
+// Import notification service to initialize cron jobs on startup
+import { notificationService } from "./services/notification.service";
 import {
   insertUserSchema,
   insertContactSchema,
@@ -24,6 +26,14 @@ import { addMonths, addDays } from "date-fns";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register notification routes
   app.use(notificationRoutes);
+
+  // Log that automatic notification scheduler is active
+  console.log('📅 Automatic notification scheduler initialized with cron jobs:');
+  console.log('   - Every minute: process scheduled notifications');
+  console.log('   - Every 15 min: retry failed notifications');
+  console.log('   - Daily 9 AM: payment reminders');
+  console.log('   - Daily 10 AM: contract expiry checks');
+  console.log('   - Monthly (last day): unpaid payment summaries');
 
   // Authentication routes
   app.post("/api/auth/register", async (req, res) => {
@@ -698,10 +708,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   });
 
                   console.log('📱 Sending payment confirmation notification...');
-                  const result = await whatsAppService.sendMessage({
-                    to: contact.phone,
-                    message: message
-                  });
+                  const userWasenderKey = await storage.getUserSetting(userId, 'wasenderApiKey');
+                  const result = await whatsAppService.sendMessageWithKey(
+                    { to: contact.phone, message: message },
+                    userWasenderKey || undefined
+                  );
 
                   if (result.success) {
                     console.log('✅ Payment confirmation sent to', contact.phone);
@@ -904,6 +915,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.deleteUser(req.params.id);
       res.json({ message: "User deleted successfully" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Admin: Per-user notification/WhatsApp config
+  app.get("/api/admin/users/:userId/notification-config", isAuthenticated, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      if (currentUser.role !== 'admin') {
+        return res.status(403).json({ error: "Access denied. Admin only." });
+      }
+      const { userId } = req.params;
+      const settings = await storage.getUserSettings(userId);
+      res.json({
+        wasenderApiKey: settings.wasenderApiKey || '',
+        wasenderPhone: settings.wasenderPhone || '',
+        autoPaymentNotifications: settings.autoPaymentNotifications !== 'false',
+        autoMonthlySummary: settings.autoMonthlySummary !== 'false',
+        paymentPaidNotifications: settings.paymentPaidNotifications !== 'false',
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/admin/users/:userId/notification-config", isAuthenticated, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      if (currentUser.role !== 'admin') {
+        return res.status(403).json({ error: "Access denied. Admin only." });
+      }
+      const { userId } = req.params;
+      const { wasenderApiKey, wasenderPhone, autoPaymentNotifications, autoMonthlySummary, paymentPaidNotifications } = req.body;
+
+      if (wasenderApiKey !== undefined) await storage.setUserSetting(userId, 'wasenderApiKey', String(wasenderApiKey));
+      if (wasenderPhone !== undefined) await storage.setUserSetting(userId, 'wasenderPhone', String(wasenderPhone));
+      if (autoPaymentNotifications !== undefined) await storage.setUserSetting(userId, 'autoPaymentNotifications', String(autoPaymentNotifications));
+      if (autoMonthlySummary !== undefined) await storage.setUserSetting(userId, 'autoMonthlySummary', String(autoMonthlySummary));
+      if (paymentPaidNotifications !== undefined) await storage.setUserSetting(userId, 'paymentPaidNotifications', String(paymentPaidNotifications));
+
+      res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
