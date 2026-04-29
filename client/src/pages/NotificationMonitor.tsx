@@ -98,19 +98,20 @@ export default function NotificationMonitor() {
 
     return (
         <div className="space-y-8 animate-fade-in">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-4xl font-bold tracking-tight">Notification Monitor</h1>
-                    <p className="text-muted-foreground mt-2 text-lg">Monitor payment reminders and notification history</p>
+                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Notification Monitor</h1>
+                    <p className="text-muted-foreground mt-2 text-base md:text-lg">Monitor payment reminders and notification history</p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => refetch()}>
+                <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                    <Button variant="outline" onClick={() => refetch()} className="flex-1 md:flex-none">
                         <RefreshCw className="w-4 h-4 mr-2" />
                         Refresh
                     </Button>
                     <Button
                         onClick={() => triggerMutation.mutate()}
                         disabled={triggerMutation.isPending}
+                        className="flex-1 md:flex-none"
                     >
                         <Play className="w-4 h-4 mr-2" />
                         {triggerMutation.isPending ? "Running..." : "Run Reminders Now"}
@@ -211,47 +212,94 @@ export default function NotificationMonitor() {
                             <p className="text-sm mt-1">Click "Run Reminders Now" to manually trigger the job</p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Recipient</TableHead>
-                                        <TableHead>Type</TableHead>
-                                        <TableHead>Reminder</TableHead>
-                                        <TableHead>Channel</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Created</TableHead>
-                                        <TableHead>Sent</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {notifications.map((notification) => (
-                                        <TableRow key={notification.id}>
-                                            <TableCell>
-                                                <div>
-                                                    <div className="font-medium">{notification.recipientName || '-'}</div>
-                                                    <div className="text-xs text-muted-foreground">{notification.recipientPhone || '-'}</div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant="secondary">{notification.type}</Badge>
-                                            </TableCell>
-                                            <TableCell>{getReminderType(notification.metadata)}</TableCell>
-                                            <TableCell>
-                                                <Badge variant="outline">{notification.channel}</Badge>
-                                            </TableCell>
-                                            <TableCell>{getStatusBadge(notification.status)}</TableCell>
-                                            <TableCell className="text-sm text-muted-foreground">
-                                                {notification.createdAt ? format(new Date(notification.createdAt), 'MMM d, HH:mm') : '-'}
-                                            </TableCell>
-                                            <TableCell className="text-sm text-muted-foreground">
-                                                {notification.sentAt ? format(new Date(notification.sentAt), 'MMM d, HH:mm') : '-'}
-                                            </TableCell>
+                        <>
+                            {/* Desktop View */}
+                            <div className="hidden md:block overflow-x-auto border rounded-lg">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Recipient</TableHead>
+                                            <TableHead>Type</TableHead>
+                                            <TableHead>Reminder</TableHead>
+                                            <TableHead>Channel</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead>Created</TableHead>
+                                            <TableHead>Sent</TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {notifications.map((notification) => (
+                                            <TableRow key={notification.id}>
+                                                <TableCell>
+                                                    <div>
+                                                        <div className="font-medium">{notification.recipientName || '-'}</div>
+                                                        <div className="text-xs text-muted-foreground">{notification.recipientPhone || '-'}</div>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant="secondary">{notification.type}</Badge>
+                                                </TableCell>
+                                                <TableCell>{getReminderType(notification.metadata)}</TableCell>
+                                                <TableCell>
+                                                    <Badge variant="outline">{notification.channel}</Badge>
+                                                </TableCell>
+                                                <TableCell>{getStatusBadge(notification.status)}</TableCell>
+                                                <TableCell className="text-sm text-muted-foreground">
+                                                    {notification.createdAt ? format(new Date(notification.createdAt), 'MMM d, HH:mm') : '-'}
+                                                </TableCell>
+                                                <TableCell className="text-sm text-muted-foreground">
+                                                    {notification.sentAt ? format(new Date(notification.sentAt), 'MMM d, HH:mm') : '-'}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+
+                            {/* Mobile View */}
+                            <div className="md:hidden space-y-4">
+                                {notifications.map((notification) => (
+                                    <div key={notification.id} className="bg-card border rounded-lg p-4 shadow-sm space-y-4">
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <div className="font-semibold text-lg">{notification.recipientName || '-'}</div>
+                                                <div className="text-sm text-muted-foreground">{notification.recipientPhone || '-'}</div>
+                                            </div>
+                                            {getStatusBadge(notification.status)}
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                            <div>
+                                                <span className="text-muted-foreground block">Type</span>
+                                                <Badge variant="secondary" className="mt-1">{notification.type}</Badge>
+                                            </div>
+                                            <div>
+                                                <span className="text-muted-foreground block">Reminder</span>
+                                                <span className="font-medium mt-1 block">{getReminderType(notification.metadata)}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-muted-foreground block">Channel</span>
+                                                <Badge variant="outline" className="mt-1">{notification.channel}</Badge>
+                                            </div>
+                                            <div>
+                                                <span className="text-muted-foreground block">Created</span>
+                                                <span className="font-medium mt-1 block">
+                                                    {notification.createdAt ? format(new Date(notification.createdAt), 'MMM d, HH:mm') : '-'}
+                                                </span>
+                                            </div>
+                                            {notification.sentAt && (
+                                                <div className="col-span-2 border-t pt-2 mt-1">
+                                                    <span className="text-muted-foreground block">Sent At</span>
+                                                    <span className="font-medium mt-1 block">
+                                                        {format(new Date(notification.sentAt), 'MMM d, HH:mm')}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
                     )}
                 </CardContent>
             </Card>

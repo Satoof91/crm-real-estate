@@ -235,7 +235,7 @@ function AppContent() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-100/40 via-transparent to-transparent pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-blue-100/40 via-transparent to-transparent pointer-events-none" />
 
-        <header className="h-20 glass border-b border-white/20 flex items-center justify-between px-8 md:hidden z-10">
+        <header className="glass border-b border-white/20 flex items-center justify-between px-8 md:hidden z-10 pt-[var(--safe-area-top)]" style={{ height: 'calc(5rem + var(--safe-area-top))' }}>
           <div className="font-bold text-xl text-primary">PropManager</div>
           <Sheet>
             <SheetTrigger asChild>
@@ -320,8 +320,8 @@ function AppContent() {
           </Sheet>
         </header>
 
-        <main className="flex-1 overflow-auto p-8 relative z-0 scroll-smooth">
-          <div className="max-w-7xl mx-auto animate-fade-in">
+        <main className="flex-1 overflow-auto p-4 md:p-8 pb-[calc(2rem+var(--safe-area-bottom))] relative z-0 scroll-smooth">
+          <div className="max-w-7xl mx-auto animate-fade-in pt-4 md:pt-0">
             <Router />
           </div>
         </main>
