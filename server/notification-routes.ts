@@ -332,10 +332,17 @@ router.get('/api/notifications/stats', isAuthenticated, async (req: Request, res
  */
 router.get('/api/cron/daily', async (req: Request, res: Response) => {
   try {
-    // Optional token-based auth
-    const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret && req.query.token !== cronSecret) {
-      return res.status(401).json({ error: 'Invalid cron token' });
+    // Token-based auth: accept via ?token= query or Authorization: Bearer header
+    const cronSecret = process.env.CRON_SECRET?.trim();
+    if (cronSecret) {
+      const queryToken = typeof req.query.token === 'string' ? req.query.token.trim() : '';
+      const headerToken = req.headers.authorization?.replace('Bearer ', '').trim() || '';
+      const providedToken = queryToken || headerToken;
+      
+      if (providedToken !== cronSecret) {
+        console.log(`[CRON] Token mismatch. Received length=${providedToken.length}, expected length=${cronSecret.length}`);
+        return res.status(401).json({ error: 'Invalid cron token' });
+      }
     }
 
     const { notificationService } = await import('./services/notification.service');

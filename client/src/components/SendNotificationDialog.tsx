@@ -238,8 +238,10 @@ export function SendNotificationDialog({
   const [selectedContact, setSelectedContact] = useState<string>('');
 
   useEffect(() => {
-    loadContacts();
-  }, []);
+    if (open) {
+      loadContacts();
+    }
+  }, [open]);
 
   useEffect(() => {
     // Load template when type changes
