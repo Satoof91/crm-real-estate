@@ -269,7 +269,7 @@ export function SendNotificationDialog({
 
   const loadContacts = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/contacts`);
+      const response = await fetch(`${API_BASE}/api/contacts`, { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         setContacts(data.data || []);
@@ -290,8 +290,8 @@ export function SendNotificationDialog({
 
       // Fetch contract and payment data
       try {
-        const contractsResponse = await fetch(`${API_BASE}/api/contracts`);
-        const paymentsResponse = await fetch(`${API_BASE}/api/payments`);
+        const contractsResponse = await fetch(`${API_BASE}/api/contracts`, { credentials: 'include' });
+        const paymentsResponse = await fetch(`${API_BASE}/api/payments`, { credentials: 'include' });
 
         if (contractsResponse.ok && paymentsResponse.ok) {
           const contractsData = await contractsResponse.json();
@@ -305,13 +305,13 @@ export function SendNotificationDialog({
 
           if (activeContract) {
             // Fetch unit info
-            const unitResponse = await fetch(`${API_BASE}/api/units/${activeContract.unitId}`);
+            const unitResponse = await fetch(`${API_BASE}/api/units/${activeContract.unitId}`, { credentials: 'include' });
             if (unitResponse.ok) {
               const unit = await unitResponse.json();
               unitNumber = unit.unitNumber || 'N/A';
 
               // Fetch building info
-              const buildingResponse = await fetch(`${API_BASE}/api/buildings/${unit.buildingId}`);
+              const buildingResponse = await fetch(`${API_BASE}/api/buildings/${unit.buildingId}`, { credentials: 'include' });
               if (buildingResponse.ok) {
                 const building = await buildingResponse.json();
                 buildingName = building.name || 'N/A';
@@ -433,6 +433,7 @@ export function SendNotificationDialog({
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(body)
       });
 

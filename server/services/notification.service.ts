@@ -1,15 +1,35 @@
 import { db } from '../db';
-import {
-  notifications,
-  NotificationStatus,
-  NotificationChannel,
-  NotificationType
-} from '@shared/sqlite-schema';
+// Use the correct notifications table based on the database type
+// In production (Neon PostgreSQL), we use the PG schema from notifications-schema
+// In dev/local (SQLite), we use the SQLite schema from sqlite-schema
+const isPostgres = process.env.DATABASE_URL && process.env.DATABASE_URL !== 'sqlite';
+
+import { notifications as pgNotifications, NotificationStatus, NotificationChannel, NotificationType } from '@shared/notifications-schema';
+import { notifications as sqliteNotifications } from '@shared/sqlite-schema';
+// Re-export the enums from sqlite-schema if they differ (they don't in this case)
+// but the table definition matters for query building
+const notifications = isPostgres ? pgNotifications : sqliteNotifications;
+
 import { whatsAppService } from './whatsapp.service';
 import { getTemplate, renderTemplate, type TemplateVariable } from './notification-templates';
 import { eq, and, lt, gte, or } from 'drizzle-orm';
 import { storage } from '../storage';
 import cron from 'node-cron';
+
+// Helper: serialize dates and metadata for the correct database type
+function toDateVal(d?: Date | string): any {
+  if (!d) return undefined;
+  const date = typeof d === 'string' ? new Date(d) : d;
+  return isPostgres ? date : date.toISOString();
+}
+function nowVal(): any {
+  return isPostgres ? new Date() : new Date().toISOString();
+}
+function toMeta(obj: any): any {
+  if (!obj) return undefined;
+  // PG jsonb accepts objects directly; SQLite text needs JSON.stringify
+  return isPostgres ? obj : JSON.stringify(obj);
+}
 
 class NotificationService {
 
@@ -22,17 +42,17 @@ class NotificationService {
       const SYSTEM_USER_ID = 'system_admin';
 
       await db.insert(notifications).values({
-        type: 'system_alert' as any, // Cast to any to avoid type errors if schema update isn't fully propagated in types
+        type: 'system_alert' as any,
         channel: 'internal' as any,
-        status: NotificationStatus.READ, // Auto-mark as read so it doesn't clutter
+        status: NotificationStatus.READ,
         recipientId: SYSTEM_USER_ID,
         recipientName: 'Property Manager',
         subject: 'System Job Log',
         message: message,
-        metadata: {
+        metadata: toMeta({
           ...metadata,
           isSystemLog: true
-        }
+        })
       });
       console.log(`[System Log] ${message}`);
     } catch (error) {
@@ -97,9 +117,9 @@ class NotificationService {
         recipientName: params.recipientName,
         subject,
         message,
-        templateData: params.templateData as any,
-        metadata: params.metadata as any,
-        scheduledFor: params.scheduledFor,
+        templateData: toMeta(params.templateData),
+        metadata: toMeta(params.metadata),
+        scheduledFor: toDateVal(params.scheduledFor),
       }).returning();
 
       // If not scheduled, send immediately
@@ -182,11 +202,11 @@ class NotificationService {
       await db.update(notifications)
         .set({
           status: success ? NotificationStatus.SENT : NotificationStatus.FAILED,
-          sentAt: success ? new Date().toISOString() : undefined,
+          sentAt: success ? nowVal() : undefined,
           whatsappMessageId: messageId,
           failureReason: error,
           retryCount: notification.retryCount + 1,
-          updatedAt: new Date().toISOString(),
+          updatedAt: nowVal(),
         })
         .where(eq(notifications.id, notificationId));
 
@@ -199,8 +219,8 @@ class NotificationService {
         .set({
           status: NotificationStatus.FAILED,
           failureReason: error.message,
-          failedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          failedAt: nowVal(),
+          updatedAt: nowVal(),
         })
         .where(eq(notifications.id, notificationId));
 
@@ -321,14 +341,14 @@ class NotificationService {
   async processScheduledNotifications() {
     try {
       const now = new Date();
-      const nowISO = now.toISOString();
+      const nowCompare = toDateVal(now);
       const pendingNotifications = await db
         .select()
         .from(notifications)
         .where(
           and(
             eq(notifications.status, NotificationStatus.PENDING),
-            lt(notifications.scheduledFor!, nowISO)
+            lt(notifications.scheduledFor!, nowCompare)
           )
         );
 
@@ -353,9 +373,8 @@ class NotificationService {
       // 6 hours ago limit for extended retries
       const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
 
-      // Use ISO strings for SQLite TEXT column comparison
-      const sevenDaysAgoISO = sevenDaysAgo.toISOString();
-      const sixHoursAgoISO = sixHoursAgo.toISOString();
+      const sevenDaysAgoCompare = toDateVal(sevenDaysAgo);
+      const sixHoursAgoCompare = toDateVal(sixHoursAgo);
 
       const failedNotifications = await db
         .select()
@@ -363,7 +382,7 @@ class NotificationService {
         .where(
           and(
             eq(notifications.status, NotificationStatus.FAILED),
-            gte(notifications.createdAt, sevenDaysAgoISO),
+            gte(notifications.createdAt, sevenDaysAgoCompare),
             or(
               // Standard retry logic: under max retries
               lt(notifications.retryCount, maxRetries),
@@ -371,7 +390,7 @@ class NotificationService {
               and(
                 eq(notifications.channel, NotificationChannel.WHATSAPP as any),
                 gte(notifications.retryCount, maxRetries),
-                lt(notifications.updatedAt, sixHoursAgoISO)
+                lt(notifications.updatedAt, sixHoursAgoCompare)
               )
             )
           )
@@ -715,10 +734,10 @@ class NotificationService {
               recipientPhone: contact.phone,
               recipientName: contact.fullName,
               message: message,
-              sentAt: result.success ? new Date().toISOString() : undefined,
+              sentAt: result.success ? nowVal() : undefined,
               whatsappMessageId: result.messageId,
               failureReason: result.error,
-              metadata: JSON.stringify({
+              metadata: toMeta({
                 unitId: unit?.id,
                 unitNumber: unit?.unitNumber,
                 totalAmount: totalAmount,
@@ -775,8 +794,8 @@ class NotificationService {
     await db.update(notifications)
       .set({
         status: NotificationStatus.READ,
-        readAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        readAt: nowVal(),
+        updatedAt: nowVal(),
       })
       .where(eq(notifications.id, notificationId));
   }

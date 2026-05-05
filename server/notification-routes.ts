@@ -321,4 +321,90 @@ router.get('/api/notifications/stats', isAuthenticated, async (req: Request, res
   }
 });
 
+/**
+ * Public daily cron endpoint — called by an external scheduler (e.g. cron-job.org)
+ * to ensure payment reminders, contract expiry checks, and monthly summaries run reliably.
+ * 
+ * Protected by a simple token (CRON_SECRET env var). If not set, falls back to allowing any call.
+ * 
+ * Usage:
+ *   GET https://crm-real-estate-yqh6.onrender.com/api/cron/daily?token=YOUR_SECRET
+ */
+router.get('/api/cron/daily', async (req: Request, res: Response) => {
+  try {
+    // Optional token-based auth
+    const cronSecret = process.env.CRON_SECRET;
+    if (cronSecret && req.query.token !== cronSecret) {
+      return res.status(401).json({ error: 'Invalid cron token' });
+    }
+
+    const { notificationService } = await import('./services/notification.service');
+
+    const results: Record<string, string> = {};
+
+    // 1. Payment reminders
+    try {
+      console.log('[CRON] Running payment reminders...');
+      await notificationService.sendPaymentReminders();
+      results.paymentReminders = 'success';
+    } catch (err: any) {
+      console.error('[CRON] Payment reminders failed:', err.message);
+      results.paymentReminders = `error: ${err.message}`;
+    }
+
+    // 2. Contract expiry checks
+    try {
+      console.log('[CRON] Running contract expiry checks...');
+      await notificationService.checkExpiringContracts();
+      results.contractExpiry = 'success';
+    } catch (err: any) {
+      console.error('[CRON] Contract expiry check failed:', err.message);
+      results.contractExpiry = `error: ${err.message}`;
+    }
+
+    // 3. Monthly unpaid summary (only on the last day of the month)
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    if (tomorrow.getMonth() !== today.getMonth()) {
+      try {
+        console.log('[CRON] Running monthly unpaid summary (last day of month)...');
+        await notificationService.sendMonthlyUnpaidSummary();
+        results.monthlySummary = 'success';
+      } catch (err: any) {
+        console.error('[CRON] Monthly summary failed:', err.message);
+        results.monthlySummary = `error: ${err.message}`;
+      }
+    } else {
+      results.monthlySummary = 'skipped (not last day of month)';
+    }
+
+    // 4. Process any scheduled notifications
+    try {
+      await notificationService.processScheduledNotifications();
+      results.scheduledNotifications = 'success';
+    } catch (err: any) {
+      results.scheduledNotifications = `error: ${err.message}`;
+    }
+
+    // 5. Retry failed notifications
+    try {
+      await notificationService.retryFailedNotifications();
+      results.retryFailed = 'success';
+    } catch (err: any) {
+      results.retryFailed = `error: ${err.message}`;
+    }
+
+    res.json({
+      success: true,
+      message: 'Daily cron job completed',
+      triggeredAt: new Date().toISOString(),
+      results
+    });
+  } catch (error: any) {
+    console.error('[CRON] Daily cron job failed:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
