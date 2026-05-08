@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { API_BASE } from '@/lib/queryClient';
+import { useQuery } from '@tanstack/react-query';
+import { API_BASE, apiRequest } from '@/lib/queryClient';
 import {
   Dialog,
   DialogContent,
@@ -233,15 +234,14 @@ export function SendNotificationDialog({
   const [useTemplate, setUseTemplate] = useState(true);
   const [messageLanguage, setMessageLanguage] = useState<'ar' | 'en'>(language as 'ar' | 'en');
 
-  // Load contacts for recipient selection
-  const [contacts, setContacts] = useState<any[]>([]);
+  // Load contacts for recipient selection using useQuery for caching and proper fetch logic
+  const { data: contactsResponse } = useQuery<any>({
+    queryKey: ['/api/contacts'],
+    enabled: open, // Only fetch when dialog is open
+  });
+  
+  const contacts = contactsResponse?.data || [];
   const [selectedContact, setSelectedContact] = useState<string>('');
-
-  useEffect(() => {
-    if (open) {
-      loadContacts();
-    }
-  }, [open]);
 
   useEffect(() => {
     // Load template when type changes
@@ -269,17 +269,7 @@ export function SendNotificationDialog({
     }
   }, [notificationType, useTemplate, language]);
 
-  const loadContacts = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/api/contacts`, { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        setContacts(data.data || []);
-      }
-    } catch (error) {
-      console.error('Error loading contacts:', error);
-    }
-  };
+  // loadContacts removed, now using useQuery
 
   const handleContactSelect = async (contactId: string, currentNotificationType?: string) => {
     // Use passed notificationType or fall back to state (for direct dropdown selection)
@@ -292,8 +282,8 @@ export function SendNotificationDialog({
 
       // Fetch contract and payment data
       try {
-        const contractsResponse = await fetch(`${API_BASE}/api/contracts`, { credentials: 'include' });
-        const paymentsResponse = await fetch(`${API_BASE}/api/payments`, { credentials: 'include' });
+        const contractsResponse = await apiRequest('GET', `/api/contracts`);
+        const paymentsResponse = await apiRequest('GET', `/api/payments`);
 
         if (contractsResponse.ok && paymentsResponse.ok) {
           const contractsData = await contractsResponse.json();
@@ -307,13 +297,13 @@ export function SendNotificationDialog({
 
           if (activeContract) {
             // Fetch unit info
-            const unitResponse = await fetch(`${API_BASE}/api/units/${activeContract.unitId}`, { credentials: 'include' });
+            const unitResponse = await apiRequest('GET', `/api/units/${activeContract.unitId}`);
             if (unitResponse.ok) {
               const unit = await unitResponse.json();
               unitNumber = unit.unitNumber || 'N/A';
 
               // Fetch building info
-              const buildingResponse = await fetch(`${API_BASE}/api/buildings/${unit.buildingId}`, { credentials: 'include' });
+              const buildingResponse = await apiRequest('GET', `/api/buildings/${unit.buildingId}`);
               if (buildingResponse.ok) {
                 const building = await buildingResponse.json();
                 buildingName = building.name || 'N/A';
@@ -419,12 +409,12 @@ export function SendNotificationDialog({
 
       const body = recipientType === 'all'
         ? {
-          recipients: contacts.filter(c => c.phone).map(c => ({
+          recipients: contacts.filter((c: any) => c.phone).map((c: any) => ({
             id: c.id,
             phone: c.phone,
             name: c.fullName
           })),
-          subject: notificationTemplates[notificationType as keyof typeof notificationTemplates][language as 'en' | 'ar'],
+          subject: notificationTemplates[notificationType as keyof typeof notificationTemplates][language as 'en' | 'ar'] || 'Notification',
           message
         }
         : {
@@ -432,12 +422,7 @@ export function SendNotificationDialog({
           message
         };
 
-      const response = await fetch(`${API_BASE}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(body)
-      });
+      const response = await apiRequest('POST', endpoint, body);
 
       if (response.ok) {
         toast({
