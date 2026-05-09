@@ -269,16 +269,22 @@ export function SendNotificationDialog({
     }
   }, [notificationType, useTemplate, language]);
 
-  // loadContacts removed, now using useQuery
-
   const handleContactSelect = async (contactId: string, currentNotificationType?: string) => {
     // Use passed notificationType or fall back to state (for direct dropdown selection)
     const effectiveNotificationType = currentNotificationType || notificationType;
-    const contact = contacts.find(c => c.id === contactId);
+    const contact = contacts.find((c: any) => c.id === contactId);
+    
     if (contact) {
       setRecipientPhone(contact.phone || '');
       setRecipientName(contact.fullName || '');
       setSelectedContact(contactId);
+
+      let unitNumber = 'N/A';
+      let buildingName = 'N/A';
+      let paymentAmount = 'N/A';
+      let paymentDay = '1';
+      let paymentsList = 'No overdue payments';
+      let totalAmount = 0;
 
       // Fetch contract and payment data
       try {
@@ -290,25 +296,24 @@ export function SendNotificationDialog({
           const paymentsData = await paymentsResponse.json();
           const activeContract = (contractsData.data || []).find((c: any) => c.contactId === contactId);
 
-          let unitNumber = 'N/A';
-          let buildingName = 'N/A';
-          let paymentAmount = 'N/A';
-          let paymentDay = '1';
-
           if (activeContract) {
             // Fetch unit info
-            const unitResponse = await apiRequest('GET', `/api/units/${activeContract.unitId}`);
-            if (unitResponse.ok) {
-              const unit = await unitResponse.json();
-              unitNumber = unit.unitNumber || 'N/A';
+            try {
+              const unitResponse = await apiRequest('GET', `/api/units/${activeContract.unitId}`);
+              if (unitResponse.ok) {
+                const unit = await unitResponse.json();
+                unitNumber = unit.unitNumber || 'N/A';
 
-              // Fetch building info
-              const buildingResponse = await apiRequest('GET', `/api/buildings/${unit.buildingId}`);
-              if (buildingResponse.ok) {
-                const building = await buildingResponse.json();
-                buildingName = building.name || 'N/A';
+                // Fetch building info
+                try {
+                  const buildingResponse = await apiRequest('GET', `/api/buildings/${unit.buildingId}`);
+                  if (buildingResponse.ok) {
+                    const building = await buildingResponse.json();
+                    buildingName = building.name || 'N/A';
+                  }
+                } catch (e) { console.error('Error fetching building:', e); }
               }
-            }
+            } catch (e) { console.error('Error fetching unit:', e); }
 
             // Get actual payment amount from payments data (pending payments for this contract)
             const contractPayments = (paymentsData.data || []).filter((p: any) => p.contractId === activeContract.id);
@@ -325,67 +330,55 @@ export function SendNotificationDialog({
             // Extract day from contract start date
             const startDate = new Date(activeContract.startDate);
             paymentDay = startDate.getDate().toString();
-          }
 
-          // Update template message with actual values using selected message language
-          if (useTemplate && effectiveNotificationType !== 'custom') {
-            const template = quickTemplates[messageLanguage][effectiveNotificationType as keyof typeof quickTemplates['ar']];
-            if (template) {
-              let msg = template;
-              msg = msg.replace(/{{name}}/g, contact.fullName || '');
-              msg = msg.replace(/{{unit}}/g, unitNumber);
-              msg = msg.replace(/{{building}}/g, buildingName);
+            // Special handling for monthly_unpaid_summary
+            if (effectiveNotificationType === 'monthly_unpaid_summary') {
+              let targetPayments = paymentsData.data || [];
+              targetPayments = targetPayments.filter((p: any) => p.contractId === activeContract.id);
 
-              // Special handling for monthly_unpaid_summary - build payments list (only overdue)
-              if (effectiveNotificationType === 'monthly_unpaid_summary') {
-                // Filter by active contract to ensure we only get this tenant's payments
-                let targetPayments = paymentsData.data || [];
-                if (activeContract) {
-                  targetPayments = targetPayments.filter((p: any) => p.contractId === activeContract.id);
-                }
+              const overduePayments = targetPayments.filter((p: any) => {
+                const isDynamicOverdue = p.status === 'pending' && new Date(p.dueDate) < new Date();
+                return p.status === 'overdue' || isDynamicOverdue;
+              });
 
-                // Get overdue payments (status is 'overdue' OR 'pending' with past due date)
-                const overduePayments = targetPayments.filter((p: any) => {
-                  const isDynamicOverdue = p.status === 'pending' && new Date(p.dueDate) < new Date();
-                  return p.status === 'overdue' || isDynamicOverdue;
-                });
+              paymentsList = overduePayments
+                .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+                .map((p: any, index: number) => {
+                  const dueDate = new Date(p.dueDate).toLocaleDateString(messageLanguage === 'ar' ? 'ar-SA' : 'en-US');
+                  const amount = parseFloat(p.amount).toLocaleString();
+                  return `${index + 1}. ${dueDate} - ${amount} ${messageLanguage === 'ar' ? 'ريال' : 'SAR'}`;
+                })
+                .join('\n');
 
-                // Build payments list (only overdue)
-                const paymentsList = overduePayments
-                  .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-                  .map((p: any, index: number) => {
-                    const dueDate = new Date(p.dueDate).toLocaleDateString(messageLanguage === 'ar' ? 'ar-SA' : 'en-US');
-                    const amount = parseFloat(p.amount).toLocaleString();
-                    return `${index + 1}. ${dueDate} - ${amount} ${messageLanguage === 'ar' ? 'ريال' : 'SAR'}`;
-                  })
-                  .join('\n');
-
-                // Calculate total
-                const totalAmount = overduePayments.reduce((sum: number, p: any) => sum + parseFloat(p.amount || '0'), 0);
-
-                msg = msg.replace(/{{paymentsList}}/g, paymentsList || 'No overdue payments');
-                msg = msg.replace(/{{amount}}/g, totalAmount.toLocaleString());
-              } else {
-                msg = msg.replace(/{{amount}}/g, paymentAmount);
-              }
-
-              msg = msg.replace(/{{paymentDay}}/g, paymentDay);
-              msg = msg.replace(/{{date}}/g, new Date().toLocaleDateString(messageLanguage === 'ar' ? 'ar-SA' : 'en-US'));
-              msg = msg.replace(/{{emergency}}/g, '920000000'); // Placeholder emergency number
-              setMessage(msg);
+              totalAmount = overduePayments.reduce((sum: number, p: any) => sum + parseFloat(p.amount || '0'), 0);
             }
           }
         }
       } catch (error) {
         console.error('Error fetching contract data:', error);
-        // Still update with basic info if contract fetch fails
-        if (useTemplate && effectiveNotificationType !== 'custom') {
-          const template = quickTemplates[language as 'ar' | 'en'][effectiveNotificationType as keyof typeof quickTemplates['ar']];
-          if (template) {
-            let msg = template;
-            msg = msg.replace(/{{name}}/g, contact.fullName || '');
-            setMessage(msg);
+      }
+
+      // Update template message with actual values using selected message language
+      // This is placed OUTSIDE the try-catch to guarantee the message is set even if API fails
+      if (useTemplate && effectiveNotificationType !== 'custom') {
+        const template = quickTemplates[messageLanguage][effectiveNotificationType as keyof typeof quickTemplates['ar']];
+        if (template) {
+          let msg = template;
+          msg = msg.replace(/{{name}}/g, contact.fullName || '');
+          msg = msg.replace(/{{unit}}/g, unitNumber);
+          msg = msg.replace(/{{building}}/g, buildingName);
+
+          if (effectiveNotificationType === 'monthly_unpaid_summary') {
+            msg = msg.replace(/{{paymentsList}}/g, paymentsList || 'No overdue payments');
+            msg = msg.replace(/{{amount}}/g, totalAmount.toLocaleString());
+          } else {
+            msg = msg.replace(/{{amount}}/g, paymentAmount);
           }
+
+          msg = msg.replace(/{{paymentDay}}/g, paymentDay);
+          msg = msg.replace(/{{date}}/g, new Date().toLocaleDateString(messageLanguage === 'ar' ? 'ar-SA' : 'en-US'));
+          msg = msg.replace(/{{emergency}}/g, '920000000'); // Placeholder emergency number
+          setMessage(msg);
         }
       }
     }
