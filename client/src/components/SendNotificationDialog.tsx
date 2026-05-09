@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { API_BASE, apiRequest } from '@/lib/queryClient';
+import { API_BASE, apiRequest, queryClient } from '@/lib/queryClient';
 import {
   Dialog,
   DialogContent,
@@ -287,34 +287,25 @@ export function SendNotificationDialog({
       let paymentsList = 'No overdue payments';
       let totalAmount = 0;
 
-      // Fetch contract and payment data
+      // Fetch contract and payment data using queryClient for automatic caching and instant responses
       try {
-        const contractsResponse = await apiRequest('GET', `/api/contracts`);
-        const paymentsResponse = await apiRequest('GET', `/api/payments`);
+        const contractsData: any = await queryClient.fetchQuery({ queryKey: ['/api/contracts'] });
+        const paymentsData: any = await queryClient.fetchQuery({ queryKey: ['/api/payments'] });
 
-        if (contractsResponse.ok && paymentsResponse.ok) {
-          const contractsData = await contractsResponse.json();
-          const paymentsData = await paymentsResponse.json();
-          const activeContract = (contractsData.data || []).find((c: any) => c.contactId === contactId);
+        const activeContract = (contractsData.data || []).find((c: any) => c.contactId === contactId);
 
-          if (activeContract) {
-            // Fetch unit info
+        if (activeContract) {
+          // Fetch unit info
+          try {
+            const unit: any = await queryClient.fetchQuery({ queryKey: [`/api/units/${activeContract.unitId}`] });
+            unitNumber = unit.unitNumber || 'N/A';
+
+            // Fetch building info
             try {
-              const unitResponse = await apiRequest('GET', `/api/units/${activeContract.unitId}`);
-              if (unitResponse.ok) {
-                const unit = await unitResponse.json();
-                unitNumber = unit.unitNumber || 'N/A';
-
-                // Fetch building info
-                try {
-                  const buildingResponse = await apiRequest('GET', `/api/buildings/${unit.buildingId}`);
-                  if (buildingResponse.ok) {
-                    const building = await buildingResponse.json();
-                    buildingName = building.name || 'N/A';
-                  }
-                } catch (e) { console.error('Error fetching building:', e); }
-              }
-            } catch (e) { console.error('Error fetching unit:', e); }
+              const building: any = await queryClient.fetchQuery({ queryKey: [`/api/buildings/${unit.buildingId}`] });
+              buildingName = building.name || 'N/A';
+            } catch (e) { console.error('Error fetching building:', e); }
+          } catch (e) { console.error('Error fetching unit:', e); }
 
             // Get actual payment amount from payments data (pending payments for this contract)
             const contractPayments = (paymentsData.data || []).filter((p: any) => p.contractId === activeContract.id);
@@ -354,7 +345,6 @@ export function SendNotificationDialog({
               totalAmount = overduePayments.reduce((sum: number, p: any) => sum + parseFloat(p.amount || '0'), 0);
             }
           }
-        }
       } catch (error) {
         console.error('Error fetching contract data:', error);
       }
