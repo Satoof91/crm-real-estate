@@ -269,9 +269,10 @@ export function SendNotificationDialog({
     }
   }, [notificationType, useTemplate, language]);
 
-  const handleContactSelect = async (contactId: string, currentNotificationType?: string) => {
+  const handleContactSelect = async (contactId: string, currentNotificationType?: string, currentLang?: 'ar' | 'en') => {
     // Use passed notificationType or fall back to state (for direct dropdown selection)
     const effectiveNotificationType = currentNotificationType || notificationType;
+    const effectiveLang = currentLang || messageLanguage;
     const contact = contacts.find((c: any) => c.id === contactId);
     
     if (contact) {
@@ -344,9 +345,9 @@ export function SendNotificationDialog({
               paymentsList = overduePayments
                 .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
                 .map((p: any, index: number) => {
-                  const dueDate = new Date(p.dueDate).toLocaleDateString(messageLanguage === 'ar' ? 'ar-SA' : 'en-US');
+                  const dueDate = new Date(p.dueDate).toLocaleDateString(effectiveLang === 'ar' ? 'ar-SA' : 'en-US');
                   const amount = parseFloat(p.amount).toLocaleString();
-                  return `${index + 1}. ${dueDate} - ${amount} ${messageLanguage === 'ar' ? 'ريال' : 'SAR'}`;
+                  return `${index + 1}. ${dueDate} - ${amount} ${effectiveLang === 'ar' ? 'ريال' : 'SAR'}`;
                 })
                 .join('\n');
 
@@ -361,7 +362,7 @@ export function SendNotificationDialog({
       // Update template message with actual values using selected message language
       // This is placed OUTSIDE the try-catch to guarantee the message is set even if API fails
       if (useTemplate && effectiveNotificationType !== 'custom') {
-        const template = quickTemplates[messageLanguage][effectiveNotificationType as keyof typeof quickTemplates['ar']];
+        const template = quickTemplates[effectiveLang][effectiveNotificationType as keyof typeof quickTemplates['ar']];
         if (template) {
           let msg = template;
           msg = msg.replace(/{{name}}/g, contact.fullName || '');
@@ -376,7 +377,7 @@ export function SendNotificationDialog({
           }
 
           msg = msg.replace(/{{paymentDay}}/g, paymentDay);
-          msg = msg.replace(/{{date}}/g, new Date().toLocaleDateString(messageLanguage === 'ar' ? 'ar-SA' : 'en-US'));
+          msg = msg.replace(/{{date}}/g, new Date().toLocaleDateString(effectiveLang === 'ar' ? 'ar-SA' : 'en-US'));
           msg = msg.replace(/{{emergency}}/g, '920000000'); // Placeholder emergency number
           setMessage(msg);
         }
@@ -543,7 +544,7 @@ export function SendNotificationDialog({
                   setMessageLanguage('ar');
                   // Re-fetch with Arabic template
                   if (selectedContact) {
-                    handleContactSelect(selectedContact);
+                    handleContactSelect(selectedContact, notificationType, 'ar');
                   } else if (useTemplate && notificationType !== 'custom') {
                     const template = quickTemplates['ar'][notificationType as keyof typeof quickTemplates['ar']];
                     if (template) setMessage(template);
@@ -560,7 +561,7 @@ export function SendNotificationDialog({
                   setMessageLanguage('en');
                   // Re-fetch with English template
                   if (selectedContact) {
-                    handleContactSelect(selectedContact);
+                    handleContactSelect(selectedContact, notificationType, 'en');
                   } else if (useTemplate && notificationType !== 'custom') {
                     const template = quickTemplates['en'][notificationType as keyof typeof quickTemplates['en']];
                     if (template) setMessage(template);
