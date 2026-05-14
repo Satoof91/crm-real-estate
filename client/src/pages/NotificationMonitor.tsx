@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Bell, Send, CheckCircle, XCircle, Clock, RefreshCw, Play } from "lucide-react";
+import { Bell, Send, CheckCircle, XCircle, Clock, RefreshCw, Play, AlertTriangle, SkipForward, PlayCircle, Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
@@ -49,6 +49,10 @@ export default function NotificationMonitor() {
 
     const notifications = historyResponse?.data || [];
 
+    // Split rows: system job logs (type === 'system_alert') vs customer-facing notifications
+    const jobLogs = notifications.filter((n) => n.type === 'system_alert');
+    const customerNotifications = notifications.filter((n) => n.type !== 'system_alert');
+
     // Trigger reminder mutation
     const triggerMutation = useMutation({
         mutationFn: async () => {
@@ -86,13 +90,68 @@ export default function NotificationMonitor() {
         }
     };
 
+    // Metadata is jsonb in PG (object) and text in SQLite (JSON string) — normalize both.
+    const parseMetadata = (raw: any): Record<string, any> => {
+        if (!raw) return {};
+        if (typeof raw === 'string') {
+            try { return JSON.parse(raw); } catch { return {}; }
+        }
+        return raw;
+    };
+
     const getReminderType = (metadata: any) => {
-        if (!metadata?.reminderType) return '-';
-        switch (metadata.reminderType) {
+        const meta = parseMetadata(metadata);
+        if (!meta.reminderType) return '-';
+        switch (meta.reminderType) {
             case '30d': return '30 days';
             case '15d': return '15 days';
             case '5d': return '5 days';
-            default: return metadata.reminderType;
+            default: return meta.reminderType;
+        }
+    };
+
+    // Identify which phase of a job run a system_alert row represents.
+    type JobPhase = 'started' | 'completed' | 'failed' | 'skipped';
+    const getJobPhase = (message?: string): JobPhase => {
+        const m = (message || '').toLowerCase();
+        if (m.includes('failed')) return 'failed';
+        if (m.includes('skipped')) return 'skipped';
+        if (m.includes('completed')) return 'completed';
+        return 'started';
+    };
+
+    const JOB_LABELS: Record<string, string> = {
+        payment_reminders: 'Payment Reminders',
+        contract_expiry: 'Contract Expiry Check',
+        monthly_summary: 'Monthly Unpaid Summary',
+    };
+
+    const getJobLabel = (meta: Record<string, any>, message?: string): string => {
+        if (meta.job && JOB_LABELS[meta.job]) return JOB_LABELS[meta.job];
+        if (meta.job) return meta.job;
+        // Fallback: strip the phase suffix from the message
+        return (message || 'Unknown Job')
+            .replace(/\s+Job\s+(Started|Completed|Skipped.*|Failed.*)$/i, '')
+            .replace(/\s+(Started|Completed|Skipped.*|Failed.*)$/i, '')
+            .trim();
+    };
+
+    const formatDuration = (ms: unknown): string => {
+        if (typeof ms !== 'number') return '-';
+        if (ms < 1000) return `${ms} ms`;
+        return `${(ms / 1000).toFixed(2)} s`;
+    };
+
+    const getPhaseBadge = (phase: JobPhase) => {
+        switch (phase) {
+            case 'started':
+                return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200"><PlayCircle className="w-3 h-3 mr-1" />Started</Badge>;
+            case 'completed':
+                return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200"><CheckCircle className="w-3 h-3 mr-1" />Completed</Badge>;
+            case 'failed':
+                return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200"><AlertTriangle className="w-3 h-3 mr-1" />Failed</Badge>;
+            case 'skipped':
+                return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200"><SkipForward className="w-3 h-3 mr-1" />Skipped</Badge>;
         }
     };
 
@@ -194,6 +253,120 @@ export default function NotificationMonitor() {
                 </CardContent>
             </Card>
 
+            {/* Job Run History — system_alert rows from the daily cron */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Activity className="w-5 h-5 text-muted-foreground" />
+                        Job Run History
+                    </CardTitle>
+                    <CardDescription>
+                        Audit log of background jobs (payment reminders, contract expiry, monthly summary). Each cron run writes a <b>Started</b> entry, then a <b>Completed</b> / <b>Failed</b> / <b>Skipped</b> entry.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {historyLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                            <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+                        </div>
+                    ) : jobLogs.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                            <Activity className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                            <p>No job runs recorded yet</p>
+                            <p className="text-sm mt-1">The daily cron logs each job's start and completion here.</p>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Desktop: detailed table */}
+                            <div className="hidden md:block overflow-x-auto border rounded-lg">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Job</TableHead>
+                                            <TableHead>Phase</TableHead>
+                                            <TableHead className="text-right">Processed</TableHead>
+                                            <TableHead className="text-right">Sent</TableHead>
+                                            <TableHead className="text-right">Duration</TableHead>
+                                            <TableHead>Details</TableHead>
+                                            <TableHead>Time</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {jobLogs.map((log) => {
+                                            const meta = parseMetadata(log.metadata);
+                                            const phase = getJobPhase(log.message);
+                                            const jobLabel = getJobLabel(meta, log.message);
+                                            return (
+                                                <TableRow key={log.id}>
+                                                    <TableCell className="font-medium">{jobLabel}</TableCell>
+                                                    <TableCell>{getPhaseBadge(phase)}</TableCell>
+                                                    <TableCell className="text-right tabular-nums">{typeof meta.processed === 'number' ? meta.processed : '-'}</TableCell>
+                                                    <TableCell className="text-right tabular-nums">{typeof meta.sent === 'number' ? meta.sent : '-'}</TableCell>
+                                                    <TableCell className="text-right tabular-nums">{formatDuration(meta.durationMs)}</TableCell>
+                                                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate" title={meta.error || log.message}>
+                                                        {phase === 'failed' && meta.error
+                                                            ? <span className="text-red-600">{meta.error}</span>
+                                                            : log.message || '-'}
+                                                    </TableCell>
+                                                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                                                        {log.createdAt ? format(new Date(log.createdAt), 'MMM d, HH:mm:ss') : '-'}
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </div>
+
+                            {/* Mobile: stacked cards */}
+                            <div className="md:hidden space-y-3">
+                                {jobLogs.map((log) => {
+                                    const meta = parseMetadata(log.metadata);
+                                    const phase = getJobPhase(log.message);
+                                    const jobLabel = getJobLabel(meta, log.message);
+                                    return (
+                                        <div key={log.id} className="bg-card border rounded-lg p-4 shadow-sm space-y-3">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0">
+                                                    <div className="font-semibold text-base truncate">{jobLabel}</div>
+                                                    <div className="text-xs text-muted-foreground mt-0.5">
+                                                        {log.createdAt ? format(new Date(log.createdAt), 'MMM d, HH:mm:ss') : '-'}
+                                                    </div>
+                                                </div>
+                                                {getPhaseBadge(phase)}
+                                            </div>
+
+                                            {(typeof meta.processed === 'number' || typeof meta.sent === 'number' || typeof meta.durationMs === 'number') && (
+                                                <div className="grid grid-cols-3 gap-2 text-sm border-t pt-3">
+                                                    <div>
+                                                        <div className="text-xs text-muted-foreground">Processed</div>
+                                                        <div className="font-medium tabular-nums">{typeof meta.processed === 'number' ? meta.processed : '-'}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs text-muted-foreground">Sent</div>
+                                                        <div className="font-medium tabular-nums">{typeof meta.sent === 'number' ? meta.sent : '-'}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs text-muted-foreground">Duration</div>
+                                                        <div className="font-medium tabular-nums">{formatDuration(meta.durationMs)}</div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {phase === 'failed' && meta.error && (
+                                                <div className="text-sm text-red-600 border-t pt-2 break-words">
+                                                    {meta.error}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
+                </CardContent>
+            </Card>
+
             {/* Notification History Table */}
             <Card>
                 <CardHeader>
@@ -205,10 +378,10 @@ export default function NotificationMonitor() {
                         <div className="flex items-center justify-center py-8">
                             <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
                         </div>
-                    ) : notifications.length === 0 ? (
+                    ) : customerNotifications.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
                             <Bell className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                            <p>No notifications sent yet</p>
+                            <p>No customer notifications yet</p>
                             <p className="text-sm mt-1">Click "Run Reminders Now" to manually trigger the job</p>
                         </div>
                     ) : (
@@ -228,7 +401,7 @@ export default function NotificationMonitor() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {notifications.map((notification) => (
+                                        {customerNotifications.map((notification) => (
                                             <TableRow key={notification.id}>
                                                 <TableCell>
                                                     <div>
@@ -258,7 +431,7 @@ export default function NotificationMonitor() {
 
                             {/* Mobile View */}
                             <div className="md:hidden space-y-4">
-                                {notifications.map((notification) => (
+                                {customerNotifications.map((notification) => (
                                     <div key={notification.id} className="bg-card border rounded-lg p-4 shadow-sm space-y-4">
                                         <div className="flex items-start justify-between">
                                             <div>
