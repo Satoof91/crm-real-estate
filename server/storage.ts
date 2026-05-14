@@ -1,5 +1,7 @@
 import { db } from "../db";
 
+const isPostgres = process.env.DATABASE_URL && process.env.DATABASE_URL !== 'sqlite';
+
 // Import from SQLite schema for local development
 import {
   users,
@@ -9,7 +11,7 @@ import {
   contracts,
   payments,
   userSettings,
-  systemSettings,
+  systemSettings as sqliteSystemSettings,
   notificationPreferences,
   type User,
   type InsertUser,
@@ -24,6 +26,9 @@ import {
   type Payment,
   type InsertPayment,
 } from "@shared/sqlite-schema";
+import { systemSettings as pgSystemSettings } from "@shared/schema";
+
+const systemSettings = isPostgres ? pgSystemSettings : sqliteSystemSettings;
 import { eq, and, gte, lte, desc, asc, or, count, ne } from "drizzle-orm";
 
 export interface IStorage {

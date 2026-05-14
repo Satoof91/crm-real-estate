@@ -98,6 +98,20 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Ensure tables that exist only in SQLite schema are also present in PG.
+  // Using raw SQL with IF NOT EXISTS so this is safe to run on every startup.
+  if (pool) {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS system_settings (
+        id VARCHAR PRIMARY KEY,
+        key TEXT NOT NULL UNIQUE,
+        value TEXT NOT NULL,
+        description TEXT,
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

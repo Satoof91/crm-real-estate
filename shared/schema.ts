@@ -85,6 +85,14 @@ export const userSettings = pgTable("user_settings", {
   updatedAt: timestamp("updated_at").notNull().$defaultFn(() => new Date()),
 });
 
+export const systemSettings = pgTable("system_settings", {
+  id: varchar("id").primaryKey().$defaultFn(() => generateId()),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  description: text("description"),
+  updatedAt: timestamp("updated_at").notNull().$defaultFn(() => new Date()),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 
 // Manual contact schema for SQLite integer boolean compatibility

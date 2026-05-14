@@ -302,7 +302,7 @@ export default function NotificationMonitor() {
                                                     <TableCell>{getPhaseBadge(phase)}</TableCell>
                                                     <TableCell className="text-right tabular-nums">{typeof meta.processed === 'number' ? meta.processed : '-'}</TableCell>
                                                     <TableCell className="text-right tabular-nums">{typeof meta.sent === 'number' ? meta.sent : '-'}</TableCell>
-                                                    <TableCell className="text-right tabular-nums">{formatDuration(meta.durationMs)}</TableCell>
+                                                    <TableCell className="text-right tabular-nums"><span dir="ltr">{formatDuration(meta.durationMs)}</span></TableCell>
                                                     <TableCell className="text-sm text-muted-foreground max-w-xs truncate" title={meta.error || log.message}>
                                                         {phase === 'failed' && meta.error
                                                             ? <span className="text-red-600">{meta.error}</span>
@@ -348,7 +348,7 @@ export default function NotificationMonitor() {
                                                     </div>
                                                     <div>
                                                         <div className="text-xs text-muted-foreground">Duration</div>
-                                                        <div className="font-medium tabular-nums">{formatDuration(meta.durationMs)}</div>
+                                                        <div className="font-medium tabular-nums" dir="ltr">{formatDuration(meta.durationMs)}</div>
                                                     </div>
                                                 </div>
                                             )}
