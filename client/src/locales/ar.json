@@ -351,12 +351,15 @@
     "inactive": "غير نشط",
     "viewDetails": "عرض التفاصيل",
     "isWhatsAppEnabled": "واتساب مفعل",
+    "autoNotification": "الإشعارات التلقائية",
+    "autoNotificationDesc": "إرسال تذكيرات الدفع التلقائية لهذا العميل",
     "table": {
       "name": "الاسم",
       "email": "البريد الإلكتروني",
       "phone": "الهاتف",
       "status": "الحالة",
-      "contracts": "العقود"
+      "contracts": "العقود",
+      "emiratesId": "الهوية الوطنية"
     }
   }
 }

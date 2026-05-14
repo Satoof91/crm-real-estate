@@ -353,12 +353,15 @@
     "inactive": "Inactive",
     "viewDetails": "View Details",
     "isWhatsAppEnabled": "WhatsApp Enabled",
+    "autoNotification": "Auto Notifications",
+    "autoNotificationDesc": "Send automatic payment reminders to this contact",
     "table": {
       "name": "Name",
       "email": "Email",
       "phone": "Phone",
       "status": "Status",
-      "contracts": "Contracts"
+      "contracts": "Contracts",
+      "emiratesId": "National ID"
     }
   }
 }

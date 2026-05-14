@@ -191,9 +191,12 @@ export const insertContactSchema = z.object({
   isWhatsAppEnabled: z.union([z.number().int().min(0).max(1), z.boolean()]).transform(val =>
     typeof val === 'boolean' ? (val ? 1 : 0) : val
   ).default(1),
+  autoNotification: z.union([z.number().int().min(0).max(1), z.boolean()]).transform(val =>
+    typeof val === 'boolean' ? (val ? 1 : 0) : val
+  ).default(1),
   email: z.string().optional(),
   nationalId: z.string().optional(),
-  language: z.string().default('en'),
+  language: z.string().default('ar'),
   status: z.string().default('prospect'),
 });
 

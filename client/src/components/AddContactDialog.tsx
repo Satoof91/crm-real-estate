@@ -147,10 +147,10 @@ export function AddContactDialog({ open, onOpenChange, onSubmit }: AddContactDia
             <div className="flex items-center justify-between space-x-2 lg:col-span-2">
               <div>
                 <Label htmlFor="autoNotification" className="cursor-pointer">
-                  {t('customers.autoNotification', 'Auto Notifications')}
+                  {t('customers.autoNotification')}
                 </Label>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {t('customers.autoNotificationDesc', 'Send automatic payment reminders to this contact')}
+                  {t('customers.autoNotificationDesc')}
                 </p>
               </div>
               <Switch
