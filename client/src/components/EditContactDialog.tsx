@@ -29,6 +29,7 @@ interface Contact {
     language?: string;
     status: string;
     isWhatsAppEnabled: boolean | number;
+    autoNotification?: boolean | number;
 }
 
 interface EditContactDialogProps {
@@ -45,9 +46,10 @@ export function EditContactDialog({ open, onOpenChange, contact, onSubmit }: Edi
         phone: '',
         email: '',
         nationalId: '',
-        language: 'en',
+        language: 'ar',
         status: 'prospect',
         isWhatsAppEnabled: true,
+        autoNotification: true,
     });
 
     useEffect(() => {
@@ -57,9 +59,10 @@ export function EditContactDialog({ open, onOpenChange, contact, onSubmit }: Edi
                 phone: contact.phone || '',
                 email: contact.email || '',
                 nationalId: contact.nationalId || '',
-                language: contact.language || 'en',
+                language: contact.language || 'ar',
                 status: contact.status || 'prospect',
                 isWhatsAppEnabled: Boolean(contact.isWhatsAppEnabled),
+                autoNotification: contact.autoNotification === undefined ? true : Boolean(contact.autoNotification),
             });
         }
     }, [contact]);
@@ -159,6 +162,22 @@ export function EditContactDialog({ open, onOpenChange, contact, onSubmit }: Edi
                                 checked={formData.isWhatsAppEnabled}
                                 onCheckedChange={(checked) => setFormData({ ...formData, isWhatsAppEnabled: checked })}
                                 data-testid="switch-edit-whatsapp"
+                            />
+                        </div>
+                        <div className="flex items-center justify-between space-x-2 lg:col-span-2">
+                            <div>
+                                <Label htmlFor="edit-autoNotification" className="cursor-pointer">
+                                    {t('customers.autoNotification', 'Auto Notifications')}
+                                </Label>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    {t('customers.autoNotificationDesc', 'Send automatic payment reminders to this contact')}
+                                </p>
+                            </div>
+                            <Switch
+                                id="edit-autoNotification"
+                                checked={formData.autoNotification}
+                                onCheckedChange={(checked) => setFormData({ ...formData, autoNotification: checked })}
+                                data-testid="switch-edit-auto-notification"
                             />
                         </div>
                     </div>

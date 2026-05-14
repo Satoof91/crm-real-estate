@@ -449,6 +449,12 @@ class NotificationService {
           continue; // Not a notification day for this payment
         }
 
+        // Skip contacts that have opted out of auto notifications
+        if ((contact as any).autoNotification === 0 || (contact as any).autoNotification === false) {
+          console.log(`Auto notification disabled for ${contact.fullName}, skipping`);
+          continue;
+        }
+
         // Check if we already sent this reminder for this payment
         const alreadySent = await this.checkIfReminderSent(payment.id, reminderType);
         if (alreadySent) {
@@ -464,6 +470,7 @@ class NotificationService {
           recipientId: contact.id,
           recipientPhone: contact.phone || undefined,
           recipientName: contact.fullName,
+          language: (contact as any).language || 'ar',
           templateData: {
             tenantName: contact.fullName,
             unitNumber: unit.unitNumber,

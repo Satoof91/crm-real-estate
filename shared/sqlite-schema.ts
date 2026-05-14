@@ -24,9 +24,10 @@ export const contacts = sqliteTable("contacts", {
   fullName: text("full_name").notNull(),
   phone: text("phone").notNull(),
   isWhatsAppEnabled: integer("is_whatsapp_enabled").notNull().default(1),
+  autoNotification: integer("auto_notification").notNull().default(1),
   email: text("email"),
   nationalId: text("national_id"),
-  language: text("language").notNull().default('en'),
+  language: text("language").notNull().default('ar'),
   status: text("status").notNull().default('prospect'),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });

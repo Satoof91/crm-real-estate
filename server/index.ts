@@ -110,6 +110,9 @@ app.use((req, res, next) => {
         updated_at TIMESTAMP NOT NULL DEFAULT NOW()
       )
     `);
+    await pool.query(`
+      ALTER TABLE contacts ADD COLUMN IF NOT EXISTS auto_notification INTEGER NOT NULL DEFAULT 1
+    `);
   }
 
   const server = await registerRoutes(app);

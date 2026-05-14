@@ -26,10 +26,11 @@ export const contacts = pgTable("contacts", {
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   fullName: text("full_name").notNull(),
   phone: text("phone").notNull(),
-  isWhatsAppEnabled: integer("is_whatsapp_enabled").notNull().default(1), // 1 for true, 0 for false (SQLite compatible)
+  isWhatsAppEnabled: integer("is_whatsapp_enabled").notNull().default(1),
+  autoNotification: integer("auto_notification").notNull().default(1),
   email: text("email"),
   nationalId: text("national_id"),
-  language: text("language").notNull().default('en'),
+  language: text("language").notNull().default('ar'),
   status: text("status").notNull().default('prospect'),
   createdAt: timestamp("created_at").notNull().$defaultFn(() => new Date()),
 });
@@ -102,9 +103,12 @@ export const insertContactSchema = z.object({
   isWhatsAppEnabled: z.union([z.number().int().min(0).max(1), z.boolean()]).transform(val =>
     typeof val === 'boolean' ? (val ? 1 : 0) : val
   ).default(1),
+  autoNotification: z.union([z.number().int().min(0).max(1), z.boolean()]).transform(val =>
+    typeof val === 'boolean' ? (val ? 1 : 0) : val
+  ).default(1),
   email: z.string().optional(),
   nationalId: z.string().optional(),
-  language: z.string().default('en'),
+  language: z.string().default('ar'),
   status: z.string().default('prospect'),
 });
 

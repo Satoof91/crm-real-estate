@@ -33,14 +33,14 @@ export function AddContactDialog({ open, onOpenChange, onSubmit }: AddContactDia
     phone: '',
     email: '',
     nationalId: '',
-    language: 'en',
+    language: 'ar',
     status: 'prospect',
     isWhatsAppEnabled: true,
+    autoNotification: true,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
     onSubmit?.(formData);
     onOpenChange(false);
     setFormData({
@@ -48,9 +48,10 @@ export function AddContactDialog({ open, onOpenChange, onSubmit }: AddContactDia
       phone: '',
       email: '',
       nationalId: '',
-      language: 'en',
+      language: 'ar',
       status: 'prospect',
       isWhatsAppEnabled: true,
+      autoNotification: true,
     });
   };
 
@@ -141,6 +142,22 @@ export function AddContactDialog({ open, onOpenChange, onSubmit }: AddContactDia
                 checked={formData.isWhatsAppEnabled}
                 onCheckedChange={(checked) => setFormData({ ...formData, isWhatsAppEnabled: checked })}
                 data-testid="switch-whatsapp"
+              />
+            </div>
+            <div className="flex items-center justify-between space-x-2 lg:col-span-2">
+              <div>
+                <Label htmlFor="autoNotification" className="cursor-pointer">
+                  {t('customers.autoNotification', 'Auto Notifications')}
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {t('customers.autoNotificationDesc', 'Send automatic payment reminders to this contact')}
+                </p>
+              </div>
+              <Switch
+                id="autoNotification"
+                checked={formData.autoNotification}
+                onCheckedChange={(checked) => setFormData({ ...formData, autoNotification: checked })}
+                data-testid="switch-auto-notification"
               />
             </div>
           </div>
