@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -8,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Clock, Undo2, Trash2 } from "lucide-react";
+import { CheckCircle2, Clock, Undo2, Trash2, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useSettings } from "@/contexts/SettingsContext";
 import { formatDisplayDate } from "@/lib/dateFormatter";
@@ -33,6 +34,17 @@ interface PaymentsTableProps {
 export function PaymentsTable({ payments, onMarkPaid, onMarkUnpaid, onDelete }: PaymentsTableProps) {
   const { t, i18n } = useTranslation();
   const { calendarType } = useSettings();
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  const handleMarkPaidClick = async (payment: Payment) => {
+    if (loadingId === payment.id) return;
+    setLoadingId(payment.id);
+    try {
+      await onMarkPaid?.(payment);
+    } finally {
+      setLoadingId(null);
+    }
+  };
 
   const statusConfig = {
     pending: { label: t('payments.status.pending'), variant: 'outline' as const, icon: Clock },
@@ -81,10 +93,13 @@ export function PaymentsTable({ payments, onMarkPaid, onMarkUnpaid, onDelete }: 
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => onMarkPaid?.(payment)}
+                          onClick={() => handleMarkPaidClick(payment)}
+                          disabled={loadingId === payment.id}
                           data-testid={`button-mark-paid-${payment.id}`}
                         >
-                          <CheckCircle2 className="h-4 w-4 mr-1" />
+                          {loadingId === payment.id
+                            ? <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            : <CheckCircle2 className="h-4 w-4 mr-1" />}
                           {t('payments.markPaid')}
                         </Button>
                       )}
@@ -158,9 +173,12 @@ export function PaymentsTable({ payments, onMarkPaid, onMarkUnpaid, onDelete }: 
                     size="sm"
                     variant="default"
                     className="flex-1"
-                    onClick={() => onMarkPaid?.(payment)}
+                    onClick={() => handleMarkPaidClick(payment)}
+                    disabled={loadingId === payment.id}
                   >
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    {loadingId === payment.id
+                      ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      : <CheckCircle2 className="h-4 w-4 mr-2" />}
                     {t('payments.markPaid')}
                   </Button>
                 )}

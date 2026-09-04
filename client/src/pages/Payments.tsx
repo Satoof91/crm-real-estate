@@ -119,9 +119,16 @@ export default function Payments() {
     const contact = contract ? contacts.find(c => c.id === contract.contactId) : null;
 
     // Determine status based on due date and current status
+    // Only mark overdue after the 15th of the due month (or once the due month has passed)
     let status = payment.status;
-    if (payment.status === 'pending' && new Date(payment.dueDate) < new Date()) {
-      status = 'overdue';
+    if (payment.status === 'pending') {
+      const due = new Date(payment.dueDate);
+      const now = new Date();
+      const dueYM = due.getFullYear() * 12 + due.getMonth();
+      const nowYM = now.getFullYear() * 12 + now.getMonth();
+      if (dueYM < nowYM || (dueYM === nowYM && now.getDate() > 15)) {
+        status = 'overdue';
+      }
     }
 
     return {
