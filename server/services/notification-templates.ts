@@ -43,35 +43,37 @@ Best regards,
 
   payment_received: {
     en: {
-      subject: 'Payment Received - Thank You!',
+      subject: 'Payment Received - {{unitNumber}}',
       body: `Dear {{tenantName}},
 
 We have successfully received your payment of {{amount}} for unit {{unitNumber}}.
 
 Payment Details:
 - Amount Received: {{amount}}
-- Payment Date: {{paymentDate}}
+- Due Date: {{dueDate}}
+- Date Paid: {{paidDate}}
 - Unit: {{unitNumber}}
 - Reference: {{referenceNumber}}
 
-Thank you for your prompt payment!
+Thank you for your payment.
 
 Best regards,
 {{companyName}}`,
     },
     ar: {
-      subject: 'تم استلام الدفعة - شكراً لك!',
+      subject: 'تم استلام الدفعة - {{unitNumber}}',
       body: `عزيزي/عزيزتي {{tenantName}}،
 
 لقد استلمنا بنجاح دفعتك بقيمة {{amount}} للوحدة {{unitNumber}}.
 
 تفاصيل الدفعة:
 - المبلغ المستلم: {{amount}}
-- تاريخ الدفع: {{paymentDate}}
+- تاريخ الاستحقاق: {{dueDate}}
+- تاريخ السداد: {{paidDate}}
 - الوحدة: {{unitNumber}}
 - الرقم المرجعي: {{referenceNumber}}
 
-شكراً لك على الدفع الفوري!
+شكراً لك على سداد دفعتك.
 
 مع أطيب التحيات،
 {{companyName}}`,

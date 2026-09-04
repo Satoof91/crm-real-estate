@@ -695,13 +695,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const contact = await storage.getContact(contract.contactId);
 
               if (contact && contact.phone) {
-                // Get Arabic template for payment confirmation
-                const template = getTemplate('payment_received', 'ar');
+                const contactLanguage = (contact as any).language || 'ar';
+                const locale = contactLanguage === 'ar' ? 'ar-SA' : 'en-GB';
+                const template = getTemplate('payment_received', contactLanguage);
                 if (template) {
+                  const dueDate = existingPayment.dueDate
+                    ? new Date(existingPayment.dueDate).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' })
+                    : '-';
+                  const paidDate = validatedData.paidDate
+                    ? new Date(validatedData.paidDate as string).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' })
+                    : new Date().toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
                   const message = renderTemplate(template.body, {
                     tenantName: contact.fullName,
                     amount: payment.amount,
-                    paymentDate: new Date().toLocaleDateString('ar-SA'),
+                    dueDate,
+                    paidDate,
                     unitNumber: unit?.unitNumber || 'N/A',
                     referenceNumber: payment.id.substring(0, 8).toUpperCase(),
                     companyName: 'Real Estate CRM'
